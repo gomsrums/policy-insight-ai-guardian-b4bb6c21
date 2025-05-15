@@ -13,6 +13,14 @@ export interface AnalysisResult {
   recommendations: string[];
 }
 
+export interface PolicyBenchmark {
+  coverageLimits: string;
+  deductibles: string;
+  missingCoverages: string[];
+  premiumComparison: string;
+  benchmarkScore: number;
+}
+
 export interface PolicyDocument {
   id: string;
   name: string;
@@ -22,4 +30,19 @@ export interface PolicyDocument {
   previewUrl?: string;
   status: "uploading" | "processing" | "ready" | "error";
   errorMessage?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
+
+export interface BusinessProfile {
+  type: string;
+  size: string;
+  industry: string;
+  employees: number;
+  revenue: string;
 }
