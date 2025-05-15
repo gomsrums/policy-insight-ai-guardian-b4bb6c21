@@ -1,7 +1,6 @@
-
 import { AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
 
-// Updated to use a different key format that should work
+// Updated to use the correct API key format
 const API_KEY = "sec_7AEnMrTv2DZmIPoi6MfO9RqsIYRYM8Ym";
 
 export const uploadDocumentToChatPDF = async (file: File): Promise<string> => {
