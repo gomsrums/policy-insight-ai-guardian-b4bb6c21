@@ -26,18 +26,18 @@ const TextInput = ({ onTextAdded }: TextInputProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Textarea
         placeholder="Paste your policy text here..."
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="min-h-[200px]"
+        className="min-h-[150px] md:min-h-[200px] text-sm"
       />
       <div className="flex justify-end">
         <Button 
           onClick={handleSubmit}
           disabled={!text.trim()}
-          className="bg-insurance-blue hover:bg-insurance-blue-dark"
+          className="bg-insurance-blue hover:bg-insurance-blue-dark text-sm px-4 py-2"
         >
           Analyze Text
         </Button>

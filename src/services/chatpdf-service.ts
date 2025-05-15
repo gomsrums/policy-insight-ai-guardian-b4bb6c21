@@ -1,13 +1,14 @@
 import { AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
 
-// Updated to use the correct API key format
-const API_KEY = "sec_7AEnMrTv2DZmIPoi6MfO9RqsIYRYM8Ym";
+// Updated with the correct API key
+const API_KEY = "sec_EvOyQVA4IfSmWsdU3EZufWHAhgUEN2WS";
 
 export const uploadDocumentToChatPDF = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
 
   try {
+    console.log("Uploading file to ChatPDF...");
     const response = await fetch("https://api.chatpdf.com/v1/sources/add-file", {
       method: "POST",
       headers: {
@@ -18,10 +19,12 @@ export const uploadDocumentToChatPDF = async (file: File): Promise<string> => {
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("ChatPDF API error:", errorData);
       throw new Error(`Error uploading file: ${errorData.message || response.statusText}`);
     }
 
     const data = await response.json();
+    console.log("File uploaded successfully, sourceId:", data.sourceId);
     return data.sourceId;
   } catch (error) {
     console.error("Error uploading document to ChatPDF:", error);
@@ -57,6 +60,7 @@ export const uploadTextToChatPDF = async (text: string): Promise<string> => {
 
 export const analyzePolicyWithChatPDF = async (sourceId: string): Promise<AnalysisResult> => {
   try {
+    console.log("Analyzing policy with sourceId:", sourceId);
     const response = await fetch("https://api.chatpdf.com/v1/chats/message", {
       method: "POST",
       headers: {
@@ -81,10 +85,12 @@ export const analyzePolicyWithChatPDF = async (sourceId: string): Promise<Analys
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("ChatPDF API error during analysis:", errorData);
       throw new Error(`Error analyzing policy: ${errorData.message || response.statusText}`);
     }
 
     const data = await response.json();
+    console.log("Analysis response received:", data);
     
     try {
       // Try to parse the content as JSON
@@ -97,7 +103,7 @@ export const analyzePolicyWithChatPDF = async (sourceId: string): Promise<Analys
       };
     } catch (parseError) {
       // If parsing fails, extract information using regex or other means
-      console.warn("Failed to parse ChatPDF response as JSON, using text extraction instead");
+      console.warn("Failed to parse ChatPDF response as JSON, using text extraction instead:", parseError);
       
       const content = data.content;
       return {
