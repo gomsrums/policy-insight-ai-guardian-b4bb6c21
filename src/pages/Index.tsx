@@ -14,22 +14,45 @@ import ChatInterface from "@/components/ChatInterface";
 import BusinessProfileForm from "@/components/BusinessProfileForm";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
-import { 
-  uploadDocumentToChatPDF, 
-  uploadTextToChatPDF, 
-  analyzePolicyWithChatPDF,
-  deleteSourceFromChatPDF,
-  chatWithPolicy,
-  compareWithBenchmark
-} from "@/services/chatpdf-service";
 import { nanoid } from "nanoid";
+
+// Example mock data for demo purposes
+const mockAnalysisResult: AnalysisResult = {
+  summary: "This is a comprehensive insurance policy covering property damage, liability, and business interruption. It provides coverage for incidents such as fire, theft, and natural disasters.",
+  gaps: [
+    "No coverage for cyber attacks or data breaches",
+    "Limited coverage for employee theft or fraud",
+    "No professional liability coverage for errors and omissions"
+  ],
+  overpayments: [
+    "High premium for flood insurance in a low-risk area",
+    "Duplicate coverage for certain assets across multiple policies"
+  ],
+  recommendations: [
+    "Add cyber liability coverage to protect against digital threats",
+    "Review and potentially reduce flood insurance premium",
+    "Consider adding professional liability coverage",
+    "Consolidate policies to avoid duplicate coverage"
+  ]
+};
+
+const mockBenchmark: PolicyBenchmark = {
+  coverageLimits: "Your general liability coverage is $1M per occurrence, which is standard for your industry. However, your aggregate limit of $2M is below the recommended $5M for businesses of your size.",
+  deductibles: "Your policy deductibles are generally aligned with industry standards, with a $1,000 deductible for property damage claims.",
+  missingCoverages: [
+    "Cyber Liability Insurance",
+    "Directors and Officers Insurance",
+    "Employment Practices Liability Insurance"
+  ],
+  premiumComparison: "Your current premium is approximately 15% higher than the average for similar businesses in your industry and location.",
+  benchmarkScore: 6.5
+};
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
   const [activeTab, setActiveTab] = useState("file");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [sourceId, setSourceId] = useState<string | null>(null);
   const [activeResultTab, setActiveResultTab] = useState("summary");
   const [isChatting, setIsChatting] = useState(false);
   const [isBenchmarking, setIsBenchmarking] = useState(false);
@@ -45,23 +68,13 @@ const Index = () => {
     analyzeDocument(newDocument);
   };
 
-  const handleRemoveDocument = async (id: string) => {
+  const handleRemoveDocument = (id: string) => {
     const documentToRemove = documents.find(doc => doc.id === id);
     setDocuments(documents.filter(doc => doc.id !== id));
     
     // Clean up any preview URLs to prevent memory leaks
     if (documentToRemove?.previewUrl) {
       URL.revokeObjectURL(documentToRemove.previewUrl);
-    }
-    
-    // Clean up source from ChatPDF if we have a sourceId
-    if (sourceId) {
-      try {
-        await deleteSourceFromChatPDF(sourceId);
-        setSourceId(null);
-      } catch (error) {
-        console.error("Error deleting source from ChatPDF:", error);
-      }
     }
     
     // Reset analysis results when removing the document
@@ -76,31 +89,11 @@ const Index = () => {
     setAnalysisResult(null);
     
     try {
-      // If we have an existing sourceId, delete it first
-      if (sourceId) {
-        try {
-          await deleteSourceFromChatPDF(sourceId);
-        } catch (error) {
-          console.error("Error deleting previous source:", error);
-        }
-      }
+      // Simulate API call with a timeout
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      let newSourceId;
-      
-      // Upload file or text to ChatPDF
-      if (document.type === "file" && document.file) {
-        newSourceId = await uploadDocumentToChatPDF(document.file);
-      } else if (document.type === "text" && document.content) {
-        newSourceId = await uploadTextToChatPDF(document.content);
-      } else {
-        throw new Error("Invalid document type or missing content");
-      }
-      
-      setSourceId(newSourceId);
-      
-      // Analyze the policy
-      const analysis = await analyzePolicyWithChatPDF(newSourceId);
-      setAnalysisResult(analysis);
+      // Set mock analysis result
+      setAnalysisResult(mockAnalysisResult);
       
       toast({
         title: "Analysis Complete",
@@ -137,35 +130,36 @@ const Index = () => {
   };
 
   const handleSendMessage = async (message: string) => {
-    if (!sourceId) {
-      throw new Error("No document has been uploaded");
-    }
-    
     setIsChatting(true);
     try {
-      const response = await chatWithPolicy(sourceId, message);
-      return response;
+      // Simulate API response with a timeout
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Return a mock response based on the user's query
+      if (message.toLowerCase().includes("coverage")) {
+        return "Your policy provides coverage for general liability up to $1 million per occurrence, property damage, and business interruption.";
+      } else if (message.toLowerCase().includes("premium")) {
+        return "Your annual premium is $2,500, which is paid in quarterly installments.";
+      } else if (message.toLowerCase().includes("deductible")) {
+        return "Your policy has a $1,000 deductible for most claims, with a $2,500 deductible for water damage.";
+      } else {
+        return "I've analyzed your policy and can answer specific questions about your coverage, premiums, deductibles, and exclusions. What would you like to know?";
+      }
     } finally {
       setIsChatting(false);
     }
   };
 
   const handleProfileSubmit = async (profile: BusinessProfile) => {
-    if (!sourceId) {
-      toast({
-        title: "No Document Found",
-        description: "Please upload a document before comparing with benchmarks.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setIsBenchmarking(true);
     setBenchmark(null);
     
     try {
-      const benchmarkResult = await compareWithBenchmark(sourceId, profile.type, profile.size);
-      setBenchmark(benchmarkResult);
+      // Simulate API call with a timeout
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Set mock benchmark result
+      setBenchmark(mockBenchmark);
       setActiveResultTab("benchmark");
       
       toast({
@@ -245,12 +239,10 @@ const Index = () => {
                 </CardContent>
               </Card>
               
-              {sourceId && (
-                <BusinessProfileForm 
-                  onProfileSubmit={handleProfileSubmit}
-                  isLoading={isBenchmarking}
-                />
-              )}
+              <BusinessProfileForm 
+                onProfileSubmit={handleProfileSubmit}
+                isLoading={isBenchmarking}
+              />
             </div>
             
             <div className="md:col-span-2">
@@ -259,7 +251,7 @@ const Index = () => {
                   <Tabs value={activeResultTab} onValueChange={setActiveResultTab}>
                     <TabsList className="w-full border-b mb-6">
                       <TabsTrigger value="summary" className="flex-1">Analysis</TabsTrigger>
-                      <TabsTrigger value="chat" className="flex-1" disabled={!sourceId}>Chat with Document</TabsTrigger>
+                      <TabsTrigger value="chat" className="flex-1">Chat with Document</TabsTrigger>
                       <TabsTrigger value="benchmark" className="flex-1" disabled={!benchmark}>Benchmarks</TabsTrigger>
                     </TabsList>
                     
@@ -288,7 +280,7 @@ const Index = () => {
                     
                     <TabsContent value="chat" className="h-[calc(100vh-320px)] min-h-[500px]">
                       <ChatInterface 
-                        sourceId={sourceId} 
+                        sourceId="demo-source-id"
                         onSendMessage={handleSendMessage}
                         isLoading={isChatting}
                       />

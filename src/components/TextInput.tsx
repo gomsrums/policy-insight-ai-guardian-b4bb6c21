@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { PolicyDocument } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
+import { useToast } from "@/hooks/use-toast";
 
 interface TextInputProps {
   onTextAdded: (document: PolicyDocument) => void;
@@ -11,16 +12,29 @@ interface TextInputProps {
 
 const TextInput = ({ onTextAdded }: TextInputProps) => {
   const [text, setText] = useState("");
+  const { toast } = useToast();
 
   const handleSubmit = () => {
     if (text.trim()) {
-      onTextAdded({
+      // Create a document with the text content
+      const newDocument = {
         id: nanoid(),
         name: "Pasted Text",
-        type: "text",
+        type: "text" as const,
         content: text,
-        status: "ready",
+        status: "ready" as const,
+      };
+      
+      // Notify user
+      toast({
+        title: "Text added",
+        description: "Your text has been added for analysis.",
       });
+      
+      // Pass the document to the parent component
+      onTextAdded(newDocument);
+      
+      // Clear the text input
       setText("");
     }
   };
