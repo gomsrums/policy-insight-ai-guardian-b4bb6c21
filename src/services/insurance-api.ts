@@ -1,7 +1,7 @@
 
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
 
-const API_BASE_URL = "https://knowyourinsurance-backend.vercel.app/api"; // Update this with the actual deployed URL
+const API_BASE_URL = "http://localhost:3000/api"; // Updated to local development server
 
 export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promise<AnalysisResult> => {
   try {
