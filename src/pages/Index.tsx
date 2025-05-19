@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import ChatInterface from "@/components/ChatInterface";
 import BusinessProfileForm from "@/components/BusinessProfileForm";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
+import { uploadDocumentForAnalysis, sendChatMessage, getBenchmarkComparison } from "@/services/insurance-api";
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
@@ -56,16 +56,8 @@ const Index = () => {
     setAnalysisResult(null);
     
     try {
-      // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Create empty analysis result structure
-      const result: AnalysisResult = {
-        summary: "",
-        gaps: [],
-        overpayments: [],
-        recommendations: []
-      };
+      // Call the API to analyze the document
+      const result = await uploadDocumentForAnalysis(document);
       
       setAnalysisResult(result);
       
@@ -106,9 +98,15 @@ const Index = () => {
   const handleSendMessage = async (message: string) => {
     setIsChatting(true);
     try {
-      // Simulate API response with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return "Please connect to an API to enable chat functionality.";
+      // Get the current document ID
+      const documentId = documents.length > 0 ? documents[0].id : "";
+      
+      // Send the chat message to the API
+      const response = await sendChatMessage(documentId, message);
+      return response;
+    } catch (error) {
+      console.error("Error sending message:", error);
+      return "Sorry, there was an error processing your message. Please try again.";
     } finally {
       setIsChatting(false);
     }
@@ -119,19 +117,10 @@ const Index = () => {
     setBenchmark(null);
     
     try {
-      // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call the API to get benchmark comparison
+      const benchmarkResult = await getBenchmarkComparison(profile);
       
-      // Create empty benchmark result structure
-      const emptyBenchmark: PolicyBenchmark = {
-        coverageLimits: "",
-        deductibles: "",
-        missingCoverages: [],
-        premiumComparison: "",
-        benchmarkScore: 0
-      };
-      
-      setBenchmark(emptyBenchmark);
+      setBenchmark(benchmarkResult);
       setActiveResultTab("benchmark");
       
       toast({
