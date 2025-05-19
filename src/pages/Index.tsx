@@ -14,39 +14,6 @@ import ChatInterface from "@/components/ChatInterface";
 import BusinessProfileForm from "@/components/BusinessProfileForm";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
-import { nanoid } from "nanoid";
-
-// Example mock data for demo purposes
-const mockAnalysisResult: AnalysisResult = {
-  summary: "This is a comprehensive insurance policy covering property damage, liability, and business interruption. It provides coverage for incidents such as fire, theft, and natural disasters.",
-  gaps: [
-    "No coverage for cyber attacks or data breaches",
-    "Limited coverage for employee theft or fraud",
-    "No professional liability coverage for errors and omissions"
-  ],
-  overpayments: [
-    "High premium for flood insurance in a low-risk area",
-    "Duplicate coverage for certain assets across multiple policies"
-  ],
-  recommendations: [
-    "Add cyber liability coverage to protect against digital threats",
-    "Review and potentially reduce flood insurance premium",
-    "Consider adding professional liability coverage",
-    "Consolidate policies to avoid duplicate coverage"
-  ]
-};
-
-const mockBenchmark: PolicyBenchmark = {
-  coverageLimits: "Your general liability coverage is $1M per occurrence, which is standard for your industry. However, your aggregate limit of $2M is below the recommended $5M for businesses of your size.",
-  deductibles: "Your policy deductibles are generally aligned with industry standards, with a $1,000 deductible for property damage claims.",
-  missingCoverages: [
-    "Cyber Liability Insurance",
-    "Directors and Officers Insurance",
-    "Employment Practices Liability Insurance"
-  ],
-  premiumComparison: "Your current premium is approximately 15% higher than the average for similar businesses in your industry and location.",
-  benchmarkScore: 6.5
-};
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
@@ -92,8 +59,15 @@ const Index = () => {
       // Simulate API call with a timeout
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Set mock analysis result
-      setAnalysisResult(mockAnalysisResult);
+      // Create empty analysis result structure
+      const result: AnalysisResult = {
+        summary: "",
+        gaps: [],
+        overpayments: [],
+        recommendations: []
+      };
+      
+      setAnalysisResult(result);
       
       toast({
         title: "Analysis Complete",
@@ -134,17 +108,7 @@ const Index = () => {
     try {
       // Simulate API response with a timeout
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Return a mock response based on the user's query
-      if (message.toLowerCase().includes("coverage")) {
-        return "Your policy provides coverage for general liability up to $1 million per occurrence, property damage, and business interruption.";
-      } else if (message.toLowerCase().includes("premium")) {
-        return "Your annual premium is $2,500, which is paid in quarterly installments.";
-      } else if (message.toLowerCase().includes("deductible")) {
-        return "Your policy has a $1,000 deductible for most claims, with a $2,500 deductible for water damage.";
-      } else {
-        return "I've analyzed your policy and can answer specific questions about your coverage, premiums, deductibles, and exclusions. What would you like to know?";
-      }
+      return "Please connect to an API to enable chat functionality.";
     } finally {
       setIsChatting(false);
     }
@@ -158,8 +122,16 @@ const Index = () => {
       // Simulate API call with a timeout
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Set mock benchmark result
-      setBenchmark(mockBenchmark);
+      // Create empty benchmark result structure
+      const emptyBenchmark: PolicyBenchmark = {
+        coverageLimits: "",
+        deductibles: "",
+        missingCoverages: [],
+        premiumComparison: "",
+        benchmarkScore: 0
+      };
+      
+      setBenchmark(emptyBenchmark);
       setActiveResultTab("benchmark");
       
       toast({
