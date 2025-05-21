@@ -56,8 +56,16 @@ const Index = () => {
     setAnalysisResult(null);
     
     try {
+      console.log("Starting document analysis:", document.name);
+      
       // Call the API to analyze the document
       const result = await uploadDocumentForAnalysis(document);
+      console.log("Analysis completed successfully:", result);
+      
+      // Ensure we have a valid result
+      if (!result || typeof result !== 'object') {
+        throw new Error("Invalid analysis result returned from API");
+      }
       
       setAnalysisResult(result);
       
@@ -92,6 +100,12 @@ const Index = () => {
   const handleAnalyzeClick = () => {
     if (documents.length > 0) {
       analyzeDocument(documents[0]);
+    } else {
+      toast({
+        title: "No Document",
+        description: "Please upload a document or paste text first.",
+        variant: "destructive",
+      });
     }
   };
 
