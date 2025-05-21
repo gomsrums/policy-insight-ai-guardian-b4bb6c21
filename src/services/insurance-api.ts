@@ -110,20 +110,24 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     const mitigationStrategies = extractListItems(fullAnalysis || "", ['mitigate', 'reduce', 'prevent', 'address', 'solution']);
 
     const transformedData: AnalysisResult = {
-      document_id: sourceId,
-      is_insurance_policy: true,
-      summary: summary,
-      gaps: gaps.length > 0 ? gaps : ["Analysis completed - detailed review shows comprehensive coverage"],
-      overpayments: [], // This would require premium comparison data
-      recommendations: recommendations.length > 0 ? recommendations : ["Regular policy review and updates recommended"],
-      risk_assessment: {
-        overall_risk_level: riskLevel,
-        risk_factors: riskFactors.length > 0 ? riskFactors : ["Standard insurance risks apply to this policy"],
-        mitigation_strategies: mitigationStrategies.length > 0 ? mitigationStrategies : ["Follow standard risk management practices and regular policy reviews"]
-      }
+      summary: data.summary || "",
+      gaps: Array.isArray(data.gaps) ? data.gaps : 
+            (data.coverage_gaps ? 
+              (Array.isArray(data.coverage_gaps) ? data.coverage_gaps : [data.coverage_gaps]) : 
+              []),
+      overpayments: Array.isArray(data.overpayments) ? data.overpayments : 
+                    (data.potential_overpayments ? 
+                      (Array.isArray(data.potential_overpayments) ? data.potential_overpayments : [data.potential_overpayments]) : 
+                      []),
+      recommendations: Array.isArray(data.recommendations) ? data.recommendations : 
+                       (data.recommended_actions ? 
+                         (Array.isArray(data.recommended_actions) ? data.recommended_actions : [data.recommended_actions]) : 
+                         []),
+      document_id: data.document_id,
+      is_insurance_policy: data.is_insurance_policy
     };
-
-    console.log("Transformed analysis data:", transformedData);
+    
+    console.log("Transformed data for frontend:", transformedData);
     return transformedData;
   } catch (error) {
     console.error("Error analyzing document with ChatPDF:", error);
