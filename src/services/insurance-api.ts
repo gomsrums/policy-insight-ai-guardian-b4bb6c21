@@ -1,7 +1,7 @@
 
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
 
-const API_BASE_URL = "http://localhost:3000/api"; // Local development server
+const API_BASE_URL = "http://localhost:8000"; // Updated to local development server
 
 export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promise<AnalysisResult> => {
   try {
@@ -16,87 +16,57 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       const textFile = new Blob([document.content], { type: "text/plain" });
       formData.append("file", textFile, "policy-text.txt");
     }
+    const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+      method: "POST",
+      body: formData,
+    });
     
-    // For debugging - add a timeout to simulate a successful API call
-    // This is a temporary measure to help debug the frontend without needing the backend
-    // Remove this in production and use the actual API call
-    // Mock data for testing
-    const mockResponse: AnalysisResult = {
-      summary: "This is a comprehensive property and casualty insurance policy that provides coverage for business property, liability, and business interruption. The policy includes standard exclusions for certain events like floods and earthquakes.",
-      gaps: [
-        "No cyber liability coverage included despite business handling customer data",
-        "No coverage for employee theft or dishonesty",
-        "Inadequate business interruption coverage ($10,000 limit is below industry recommendation)"
-      ],
-      overpayments: [
-        "Premiums for physical property damage may be excessive given the nature of operations",
-        "Duplicate coverage for certain types of liability that overlap with existing policies"
-      ],
-      recommendations: [
-        "Add cyber liability coverage with at least $1M limit",
-        "Increase business interruption coverage to minimum of $50,000",
-        "Consider adding employee dishonesty coverage",
-        "Reassess property valuation to potentially reduce premiums"
-      ]
-    };
-
-    try {
-      // Attempt the real API call
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        console.warn(`API returned status ${response.status}, using mock data for development`);
-        return mockResponse;
-      }
-      
-      const data = await response.json();
-      console.log("Raw API response:", data);
-      
-      // Transform the response to match the frontend's expected format
-      // This ensures compatibility between the backend and frontend
-      const transformedData: AnalysisResult = {
-        summary: data.summary || data.policy_summary || "",
-        gaps: Array.isArray(data.gaps) ? data.gaps : 
-              (data.coverage_gaps ? 
-                (Array.isArray(data.coverage_gaps) ? data.coverage_gaps : [data.coverage_gaps]) : 
-                []),
-        overpayments: Array.isArray(data.overpayments) ? data.overpayments : 
-                      (data.potential_overpayments ? 
-                        (Array.isArray(data.potential_overpayments) ? data.potential_overpayments : [data.potential_overpayments]) : 
-                        []),
-        recommendations: Array.isArray(data.recommendations) ? data.recommendations : 
-                        (data.recommended_actions ? 
-                          (Array.isArray(data.recommended_actions) ? data.recommended_actions : [data.recommended_actions]) : 
-                          [])
-      };
-      
-      console.log("Transformed data for frontend:", transformedData);
-      return transformedData;
-    } catch (error) {
-      console.warn("API call failed, using mock data for development:", error);
-      return mockResponse;
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
     }
+    
+    const data = await response.json();
+    console.log("Raw API response:", data);
+    
+    // Transform the response to match the frontend's expected format
+    // This ensures compatibility between the backend and frontend
+    const transformedData: AnalysisResult = {
+      summary: data.summary || "",
+      gaps: Array.isArray(data.gaps) ? data.gaps : 
+            (data.coverage_gaps ? 
+              (Array.isArray(data.coverage_gaps) ? data.coverage_gaps : [data.coverage_gaps]) : 
+              []),
+      overpayments: Array.isArray(data.overpayments) ? data.overpayments : 
+                    (data.potential_overpayments ? 
+                      (Array.isArray(data.potential_overpayments) ? data.potential_overpayments : [data.potential_overpayments]) : 
+                      []),
+      recommendations: Array.isArray(data.recommendations) ? data.recommendations : 
+                       (data.recommended_actions ? 
+                         (Array.isArray(data.recommended_actions) ? data.recommended_actions : [data.recommended_actions]) : 
+                         [])
+    };
+    
+    console.log("Transformed data for frontend:", transformedData);
+    return transformedData;
   } catch (error) {
     console.error("Error uploading document:", error);
     throw error;
   }
 };
 
-export const sendChatMessage = async (documentId: string, message: string): Promise<string> => {
+export const sendChatMessage = async (documentId: string, question: string): Promise<string> => {
   try {
     console.log("Sending chat message for document:", documentId);
-    
-    const response = await fetch(`${API_BASE_URL}/chat`, {
+
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/query`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        documentId,
-        message,
+              question: question,
+            document_id: documentId,
+            query_type:"general"
       }),
     });
     
@@ -105,8 +75,28 @@ export const sendChatMessage = async (documentId: string, message: string): Prom
     }
     
     const data = await response.json();
-    console.log("Chat response:", data);
-    return data.response || data.message || "No response received";
+    return data.answer;
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    throw error;
+  }
+};
+
+
+export const getCoverageGaps = async (documentId: string): Promise<string> => {
+  try {
+    console.log("Sending chat message for document:", documentId);
+
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/coverage-gaps`, {
+      method: "GET",
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.answer;
   } catch (error) {
     console.error("Error sending chat message:", error);
     throw error;

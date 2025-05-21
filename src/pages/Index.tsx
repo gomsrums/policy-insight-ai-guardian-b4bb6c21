@@ -13,7 +13,7 @@ import ChatInterface from "@/components/ChatInterface";
 import BusinessProfileForm from "@/components/BusinessProfileForm";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
-import { uploadDocumentForAnalysis, sendChatMessage, getBenchmarkComparison } from "@/services/insurance-api";
+import { uploadDocumentForAnalysis, sendChatMessage, getBenchmarkComparison, getCoverageGaps } from "@/services/insurance-api";
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
@@ -24,6 +24,8 @@ const Index = () => {
   const [isChatting, setIsChatting] = useState(false);
   const [isBenchmarking, setIsBenchmarking] = useState(false);
   const [benchmark, setBenchmark] = useState<PolicyBenchmark | null>(null);
+  const [isLoadingGaps, setIsLoadingGaps] = useState(false);
+  const [coverageGaps, setCoverageGaps] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleFileAdded = (newDocument: PolicyDocument) => {
@@ -109,11 +111,59 @@ const Index = () => {
     }
   };
 
-  const handleSendMessage = async (message: string) => {
-    setIsChatting(true);
+const fetchCoverageGaps = async () => {
+    if (!analysisResult?.document_id) return;
+    
+    setIsLoadingGaps(true);
+    setCoverageGaps([]);
+    
     try {
       // Get the current document ID
-      const documentId = documents.length > 0 ? documents[0].id : "";
+      const documentId = analysisResult.document_id;
+      
+      // Fetch coverage gaps from the API
+      const response = await getCoverageGaps(documentId);
+      
+      // Parse the response
+      if (typeof response === 'string') {
+        // If it's a string, split by newlines to create an array
+        setCoverageGaps(response.split('\n').filter(gap => gap.trim().length > 0));
+      } else if (Array.isArray(response)) {
+        // If it's already an array
+        setCoverageGaps(response);
+      } 
+
+      // else if (response && typeof response === 'object' && response.answer) {
+      //   // If it's an object with an answer property
+      //   setCoverageGaps(
+      //     typeof response === 'string' 
+      //       ? response.JSON.split('\n').filter(gap => gap.trim().length > 0)
+      //       : Array.isArray(response) ? response : []
+      //   );
+      // }
+      
+      toast({
+        title: "Coverage Gaps Analysis Complete",
+        description: "Your policy has been analyzed for potential coverage gaps.",
+      });
+    } catch (error) {
+      console.error("Error fetching coverage gaps:", error);
+      toast({
+        title: "Coverage Gaps Analysis Failed",
+        description: "There was an error analyzing your policy for coverage gaps.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingGaps(false);
+    }
+  };
+
+    const handleSendMessage = async (message: string) => {
+    setIsChatting(true);
+    try {
+
+      // Get the current document ID
+      const documentId = analysisResult.document_id;
       
       // Send the chat message to the API
       const response = await sendChatMessage(documentId, message);

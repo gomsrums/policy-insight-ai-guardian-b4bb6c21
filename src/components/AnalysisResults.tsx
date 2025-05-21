@@ -56,9 +56,13 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
               <p className="text-gray-500">No significant coverage gaps identified.</p>
             )}
           </CardContent>
+          <CardContent>
+            <p>{analysis.is_insurance_policy}</p>
+          </CardContent>
+
         </Card>
 
-        <Card className="border-amber-200">
+        {/* <Card className="border-amber-200">
           <CardHeader className="bg-amber-50 border-b border-amber-200">
             <CardTitle className="text-amber-700">Potential Overpayments</CardTitle>
             <CardDescription>Areas where you may be paying too much</CardDescription>
@@ -77,7 +81,7 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
               <p className="text-gray-500">No significant overpayments identified.</p>
             )}
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       <Card className="border-green-200">

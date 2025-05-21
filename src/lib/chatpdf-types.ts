@@ -7,6 +7,8 @@ export interface ChatPDFResponse {
 }
 
 export interface AnalysisResult {
+  document_id: string;
+  is_insurance_policy: boolean;
   gaps: string[];
   overpayments: string[];
   summary: string;
