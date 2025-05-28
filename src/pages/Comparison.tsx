@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,16 +6,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
+import LoginDialog from "@/components/LoginDialog";
 
 const Comparison = () => {
   const [quotation1, setQuotation1] = useState("");
   const [quotation2, setQuotation2] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [comparisonResults, setComparisonResults] = useState<any>(null);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const handleCompare = async () => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+      return;
+    }
+
     if (!quotation1.trim() || !quotation2.trim()) {
       toast({
         title: "Missing Information",
@@ -93,6 +101,22 @@ const Comparison = () => {
             </p>
           </div>
 
+          {!isAuthenticated && (
+            <div className="mb-8 p-6 border border-yellow-200 bg-yellow-50 rounded-lg">
+              <div className="text-center space-y-4">
+                <p className="text-yellow-800">
+                  Please log in to access the policy comparison feature
+                </p>
+                <Button
+                  onClick={() => setShowLoginDialog(true)}
+                  className="bg-insurance-blue hover:bg-insurance-blue-dark"
+                >
+                  Login to Compare
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -104,6 +128,7 @@ const Comparison = () => {
                   value={quotation1}
                   onChange={(e) => setQuotation1(e.target.value)}
                   className="min-h-[200px]"
+                  disabled={!isAuthenticated}
                 />
               </CardContent>
             </Card>
@@ -118,6 +143,7 @@ const Comparison = () => {
                   value={quotation2}
                   onChange={(e) => setQuotation2(e.target.value)}
                   className="min-h-[200px]"
+                  disabled={!isAuthenticated}
                 />
               </CardContent>
             </Card>
@@ -126,7 +152,7 @@ const Comparison = () => {
           <div className="text-center mb-8">
             <Button 
               onClick={handleCompare}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || !isAuthenticated}
               className="bg-insurance-blue hover:bg-insurance-blue-dark px-8 py-3"
             >
               {isAnalyzing ? (
@@ -234,12 +260,20 @@ const Comparison = () => {
           {!comparisonResults && !isAnalyzing && (
             <div className="text-center py-12">
               <p className="text-gray-500">
-                Paste your insurance policy quotations above and click "Compare Policies" to see detailed comparison results
+                {isAuthenticated 
+                  ? "Paste your insurance policy quotations above and click \"Compare Policies\" to see detailed comparison results"
+                  : "Please log in to compare insurance policies"
+                }
               </p>
             </div>
           )}
         </div>
       </main>
+      
+      <LoginDialog
+        isOpen={showLoginDialog}
+        onClose={() => setShowLoginDialog(false)}
+      />
     </div>
   );
 };
