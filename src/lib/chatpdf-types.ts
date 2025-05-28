@@ -13,6 +13,11 @@ export interface AnalysisResult {
   overpayments: string[];
   summary: string;
   recommendations: string[];
+  risk_assessment?: {
+    overall_risk_level: "Low" | "Medium" | "High";
+    risk_factors: string[];
+    mitigation_strategies: string[];
+  };
 }
 
 export interface PolicyBenchmark {
@@ -47,4 +52,10 @@ export interface BusinessProfile {
   industry: string;
   employees: number;
   revenue: string;
+  policyType: "business" | "individual";
+  individualDetails?: {
+    age: number;
+    location: string;
+    familySize: number;
+  };
 }

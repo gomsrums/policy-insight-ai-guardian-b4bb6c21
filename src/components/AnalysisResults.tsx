@@ -2,7 +2,7 @@
 import { AnalysisResult } from "@/lib/chatpdf-types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface AnalysisResultsProps {
   analysis: AnalysisResult;
@@ -24,6 +24,15 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
     );
   }
 
+  const getRiskBadgeVariant = (level: string) => {
+    switch (level) {
+      case "Low": return "default";
+      case "Medium": return "secondary";
+      case "High": return "destructive";
+      default: return "outline";
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Card>
@@ -35,6 +44,44 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
           <p>{analysis.summary}</p>
         </CardContent>
       </Card>
+
+      {analysis.risk_assessment && (
+        <Card className="border-purple-200">
+          <CardHeader className="bg-purple-50 border-b border-purple-200">
+            <CardTitle className="text-purple-700 flex items-center gap-2">
+              Risk Assessment
+              <Badge variant={getRiskBadgeVariant(analysis.risk_assessment.overall_risk_level)}>
+                {analysis.risk_assessment.overall_risk_level} Risk
+              </Badge>
+            </CardTitle>
+            <CardDescription>Identified risk factors and mitigation strategies</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">Risk Factors</h4>
+              <ul className="space-y-2">
+                {analysis.risk_assessment.risk_factors.map((factor, index) => (
+                  <li key={index} className="flex gap-2">
+                    <span className="text-purple-500 font-bold">•</span>
+                    <span>{factor}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Mitigation Strategies</h4>
+              <ul className="space-y-2">
+                {analysis.risk_assessment.mitigation_strategies.map((strategy, index) => (
+                  <li key={index} className="flex gap-2">
+                    <span className="text-green-500 font-bold">•</span>
+                    <span>{strategy}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="border-red-200">
@@ -56,54 +103,29 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
               <p className="text-gray-500">No significant coverage gaps identified.</p>
             )}
           </CardContent>
-          <CardContent>
-            <p>{analysis.is_insurance_policy}</p>
-          </CardContent>
-
         </Card>
 
-        {/* <Card className="border-amber-200">
-          <CardHeader className="bg-amber-50 border-b border-amber-200">
-            <CardTitle className="text-amber-700">Potential Overpayments</CardTitle>
-            <CardDescription>Areas where you may be paying too much</CardDescription>
+        <Card className="border-green-200">
+          <CardHeader className="bg-green-50 border-b border-green-200">
+            <CardTitle className="text-green-700">Recommendations</CardTitle>
+            <CardDescription>How to optimize your insurance coverage</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            {analysis.overpayments.length > 0 ? (
+            {analysis.recommendations.length > 0 ? (
               <ul className="space-y-2">
-                {analysis.overpayments.map((item, index) => (
+                {analysis.recommendations.map((rec, index) => (
                   <li key={index} className="flex gap-2">
-                    <span className="text-amber-500 font-bold">•</span>
-                    <span>{item}</span>
+                    <span className="text-green-500 font-bold">•</span>
+                    <span>{rec}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No significant overpayments identified.</p>
+              <p className="text-gray-500">No specific recommendations available.</p>
             )}
           </CardContent>
-        </Card> */}
+        </Card>
       </div>
-
-      <Card className="border-green-200">
-        <CardHeader className="bg-green-50 border-b border-green-200">
-          <CardTitle className="text-green-700">Recommendations</CardTitle>
-          <CardDescription>How to optimize your insurance coverage</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {analysis.recommendations.length > 0 ? (
-            <ul className="space-y-2">
-              {analysis.recommendations.map((rec, index) => (
-                <li key={index} className="flex gap-2">
-                  <span className="text-green-500 font-bold">•</span>
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No specific recommendations available.</p>
-          )}
-        </CardContent>
-      </Card>
 
       <Alert>
         <AlertTitle>Disclaimer</AlertTitle>

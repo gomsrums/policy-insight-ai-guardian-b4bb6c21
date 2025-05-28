@@ -40,7 +40,8 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     const analysisQuestions = [
       "Is this document an insurance policy? Provide a summary of what this document covers.",
       "What are the main coverage gaps or areas where this policy might not provide adequate protection?",
-      "What recommendations would you make to improve this insurance coverage?"
+      "What recommendations would you make to improve this insurance coverage?",
+      "Perform a risk assessment of this insurance policy. Identify risk factors and suggest mitigation strategies. Rate the overall risk as Low, Medium, or High."
     ];
 
     const analysisResults = await Promise.all(
@@ -74,27 +75,51 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     console.log("Analysis results:", analysisResults);
 
     // Step 3: Process the responses into our format
-    const [summaryResponse, gapsResponse, recommendationsResponse] = analysisResults;
+    const [summaryResponse, gapsResponse, recommendationsResponse, riskResponse] = analysisResults;
     
-    // Parse gaps from the response (assuming they come as a string that we need to split)
+    // Parse gaps from the response
     const gaps = gapsResponse.split('\n')
       .filter((line: string) => line.trim().length > 0 && (line.includes('•') || line.includes('-') || line.includes('1.') || line.includes('2.')))
       .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
       .filter((gap: string) => gap.length > 0);
 
-    // Parse recommendations similarly
+    // Parse recommendations
     const recommendations = recommendationsResponse.split('\n')
       .filter((line: string) => line.trim().length > 0 && (line.includes('•') || line.includes('-') || line.includes('1.') || line.includes('2.')))
       .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
       .filter((rec: string) => rec.length > 0);
+
+    // Parse risk assessment
+    const riskLevel = riskResponse.toLowerCase().includes('high') ? 'High' : 
+                     riskResponse.toLowerCase().includes('medium') ? 'Medium' : 'Low';
+    
+    const riskFactors = riskResponse.split('\n')
+      .filter((line: string) => line.trim().length > 0 && 
+        (line.toLowerCase().includes('risk') || line.includes('•') || line.includes('-')))
+      .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
+      .filter((factor: string) => factor.length > 10)
+      .slice(0, 5);
+
+    const mitigationStrategies = riskResponse.split('\n')
+      .filter((line: string) => line.trim().length > 0 && 
+        (line.toLowerCase().includes('mitigat') || line.toLowerCase().includes('recommend') || 
+         line.toLowerCase().includes('suggest')))
+      .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
+      .filter((strategy: string) => strategy.length > 10)
+      .slice(0, 5);
 
     const transformedData: AnalysisResult = {
       document_id: sourceId,
       is_insurance_policy: summaryResponse.toLowerCase().includes('insurance') || summaryResponse.toLowerCase().includes('policy'),
       summary: summaryResponse,
       gaps: gaps.length > 0 ? gaps : ["No specific coverage gaps identified in the analysis."],
-      overpayments: [], // ChatPDF doesn't provide overpayment analysis by default
-      recommendations: recommendations.length > 0 ? recommendations : ["No specific recommendations provided."]
+      overpayments: [],
+      recommendations: recommendations.length > 0 ? recommendations : ["No specific recommendations provided."],
+      risk_assessment: {
+        overall_risk_level: riskLevel as "Low" | "Medium" | "High",
+        risk_factors: riskFactors.length > 0 ? riskFactors : ["No specific risk factors identified."],
+        mitigation_strategies: mitigationStrategies.length > 0 ? mitigationStrategies : ["No specific mitigation strategies provided."]
+      }
     };
 
     console.log("Transformed analysis data:", transformedData);
@@ -183,19 +208,40 @@ export const getBenchmarkComparison = async (profile: BusinessProfile): Promise<
   try {
     console.log("Getting benchmark comparison for profile:", profile);
     
-    // For benchmark comparison, we'll create a mock response since ChatPDF doesn't have industry benchmark data
-    // This would typically require a separate service or database
-    const mockBenchmark: PolicyBenchmark = {
-      coverageLimits: `For a ${profile.type} business in ${profile.industry} with ${profile.employees} employees, recommended coverage limits are typically higher than standard policies.`,
-      deductibles: `Industry standard deductibles for ${profile.industry} businesses range from $1,000-$5,000 depending on coverage type.`,
-      missingCoverages: [
-        "Cyber liability insurance",
-        "Professional liability coverage",
-        "Business interruption insurance"
-      ],
-      premiumComparison: `Based on your business profile, you may be paying 10-15% above market rate for similar coverage.`,
-      benchmarkScore: 75
-    };
+    let mockBenchmark: PolicyBenchmark;
+
+    if (profile.policyType === "individual") {
+      // Individual policy benchmarks
+      const age = profile.individualDetails?.age || 25;
+      const location = profile.individualDetails?.location || "suburban";
+      const familySize = profile.individualDetails?.familySize || 1;
+
+      mockBenchmark = {
+        coverageLimits: `For an individual aged ${age} in a ${location} area with ${familySize} family member(s), recommended coverage includes: Life insurance 10-12x annual income, disability insurance 60-70% of income, and adequate health insurance with low deductibles.`,
+        deductibles: `Recommended deductibles for individuals: Health insurance $500-$2,500, auto insurance $500-$1,000, homeowners/renters $500-$1,500 depending on financial situation.`,
+        missingCoverages: [
+          "Umbrella liability insurance",
+          "Long-term disability insurance", 
+          "Critical illness coverage",
+          "Identity theft protection"
+        ],
+        premiumComparison: `Based on your age and location, you may be paying within market range. Consider bundling policies for discounts.`,
+        benchmarkScore: age < 35 ? 8 : age < 50 ? 7 : 6
+      };
+    } else {
+      // Business policy benchmarks
+      mockBenchmark = {
+        coverageLimits: `For a ${profile.type} business in ${profile.industry} with ${profile.employees} employees, recommended coverage limits are typically higher than standard policies.`,
+        deductibles: `Industry standard deductibles for ${profile.industry} businesses range from $1,000-$5,000 depending on coverage type.`,
+        missingCoverages: [
+          "Cyber liability insurance",
+          "Professional liability coverage",
+          "Business interruption insurance"
+        ],
+        premiumComparison: `Based on your business profile, you may be paying 10-15% above market rate for similar coverage.`,
+        benchmarkScore: 75 / 10
+      };
+    }
     
     return mockBenchmark;
   } catch (error) {

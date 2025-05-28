@@ -188,7 +188,7 @@ const Index = () => {
       
       toast({
         title: "Benchmark Comparison Complete",
-        description: "Your policy has been compared against industry standards.",
+        description: `Your ${profile.policyType} policy has been compared against industry standards.`,
       });
     } catch (error) {
       console.error("Error comparing with benchmark:", error);
@@ -333,7 +333,7 @@ const Index = () => {
                       {!benchmark && !isBenchmarking && (
                         <div className="text-center py-12">
                           <p className="text-gray-500">
-                            Fill in your business profile to compare with benchmarks
+                            Fill in your profile information to compare with benchmarks
                           </p>
                         </div>
                       )}
