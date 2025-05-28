@@ -58,31 +58,31 @@ const Index = () => {
     setAnalysisResult(null);
     
     try {
-      console.log("Starting document analysis:", document.name);
+      console.log("Starting ChatPDF document analysis:", document.name);
       
-      // Call the API to analyze the document
+      // Call the ChatPDF API to analyze the document
       const result = await uploadDocumentForAnalysis(document);
-      console.log("Analysis completed successfully:", result);
+      console.log("ChatPDF analysis completed successfully:", result);
       
-      // Ensure we have a valid result
-      if (!result || typeof result !== 'object') {
-        throw new Error("Invalid analysis result returned from API");
+      // Ensure we have a valid result with document_id
+      if (!result || typeof result !== 'object' || !result.document_id) {
+        throw new Error("Invalid analysis result returned from ChatPDF API");
       }
       
       setAnalysisResult(result);
       
       toast({
         title: "Analysis Complete",
-        description: "Your insurance policy has been successfully analyzed.",
+        description: "Your insurance policy has been successfully analyzed using ChatPDF.",
       });
 
       // Set to summary tab
       setActiveResultTab("summary");
     } catch (error) {
-      console.error("Error analyzing document:", error);
+      console.error("Error analyzing document with ChatPDF:", error);
       toast({
         title: "Analysis Failed",
-        description: "There was an error analyzing your document. Please try again.",
+        description: "There was an error analyzing your document with ChatPDF. Please check your internet connection and try again.",
         variant: "destructive",
       });
       
@@ -90,7 +90,7 @@ const Index = () => {
       setDocuments(docs => 
         docs.map(doc => 
           doc.id === document.id 
-            ? { ...doc, status: "error", errorMessage: "Failed to analyze document" } 
+            ? { ...doc, status: "error", errorMessage: "Failed to analyze document with ChatPDF" } 
             : doc
         )
       );
@@ -111,46 +111,42 @@ const Index = () => {
     }
   };
 
-const fetchCoverageGaps = async () => {
+  const fetchCoverageGaps = async () => {
     if (!analysisResult?.document_id) return;
     
     setIsLoadingGaps(true);
     setCoverageGaps([]);
     
     try {
-      // Get the current document ID
+      // Get the current document ID from ChatPDF
       const documentId = analysisResult.document_id;
       
-      // Fetch coverage gaps from the API
+      // Fetch coverage gaps from the ChatPDF API
       const response = await getCoverageGaps(documentId);
       
-      // Parse the response
+      // Parse the response into an array
       if (typeof response === 'string') {
-        // If it's a string, split by newlines to create an array
-        setCoverageGaps(response.split('\n').filter(gap => gap.trim().length > 0));
+        // Split by newlines and filter out empty lines
+        const gaps = response.split('\n')
+          .filter(gap => gap.trim().length > 0)
+          .map(gap => gap.replace(/^[•\-\d\.]\s*/, '').trim())
+          .filter(gap => gap.length > 0);
+        setCoverageGaps(gaps);
       } else if (Array.isArray(response)) {
-        // If it's already an array
         setCoverageGaps(response);
-      } 
-
-      // else if (response && typeof response === 'object' && response.answer) {
-      //   // If it's an object with an answer property
-      //   setCoverageGaps(
-      //     typeof response === 'string' 
-      //       ? response.JSON.split('\n').filter(gap => gap.trim().length > 0)
-      //       : Array.isArray(response) ? response : []
-      //   );
-      // }
+      } else {
+        setCoverageGaps(['No coverage gaps analysis available']);
+      }
       
       toast({
         title: "Coverage Gaps Analysis Complete",
-        description: "Your policy has been analyzed for potential coverage gaps.",
+        description: "Your policy has been analyzed for potential coverage gaps using ChatPDF.",
       });
     } catch (error) {
-      console.error("Error fetching coverage gaps:", error);
+      console.error("Error fetching coverage gaps from ChatPDF:", error);
       toast({
         title: "Coverage Gaps Analysis Failed",
-        description: "There was an error analyzing your policy for coverage gaps.",
+        description: "There was an error analyzing your policy for coverage gaps with ChatPDF.",
         variant: "destructive",
       });
     } finally {
@@ -158,19 +154,22 @@ const fetchCoverageGaps = async () => {
     }
   };
 
-    const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string) => {
     setIsChatting(true);
     try {
-
-      // Get the current document ID
-      const documentId = analysisResult.document_id;
+      // Get the current document ID from ChatPDF
+      const documentId = analysisResult?.document_id;
       
-      // Send the chat message to the API
+      if (!documentId) {
+        return "Please upload and analyze a document first before asking questions.";
+      }
+      
+      // Send the chat message to the ChatPDF API
       const response = await sendChatMessage(documentId, message);
       return response;
     } catch (error) {
-      console.error("Error sending message:", error);
-      return "Sorry, there was an error processing your message. Please try again.";
+      console.error("Error sending message to ChatPDF:", error);
+      return "Sorry, there was an error processing your message with ChatPDF. Please try again.";
     } finally {
       setIsChatting(false);
     }
