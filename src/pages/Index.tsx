@@ -290,6 +290,8 @@ const Index = () => {
                       
                       {isAnalyzing && (
                         <AnalysisResults analysis={{
+                          document_id: "",
+                          is_insurance_policy: false,
                           summary: "",
                           gaps: [],
                           overpayments: [],
