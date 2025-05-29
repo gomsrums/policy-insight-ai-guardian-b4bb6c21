@@ -176,25 +176,34 @@ const Index = () => {
   };
 
   const handleProfileSubmit = async (profile: BusinessProfile) => {
-    setIsBenchmarking(true);
+    if (!analysisResult?.document_id) {
+      toast({
+        title: "No Document Analyzed",
+        description: "Please upload and analyze a document first before comparing with benchmarks.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBenchmarking(true);
     setBenchmark(null);
     
     try {
-      // Call the API to get benchmark comparison
-      const benchmarkResult = await getBenchmarkComparison(profile);
+      // Call the API to get benchmark comparison with the analyzed document
+      const benchmarkResult = await getBenchmarkComparison(profile, analysisResult.document_id);
       
       setBenchmark(benchmarkResult);
       setActiveResultTab("benchmark");
       
       toast({
         title: "Benchmark Comparison Complete",
-        description: `Your ${profile.policyType} policy has been compared against industry standards.`,
+        description: `Your ${profile.policyType} policy has been compared against industry standards using ChatPDF analysis.`,
       });
     } catch (error) {
       console.error("Error comparing with benchmark:", error);
       toast({
         title: "Benchmark Comparison Failed",
-        description: "There was an error comparing your policy with benchmarks.",
+        description: "There was an error comparing your policy with benchmarks. Please ensure you have analyzed a document first.",
         variant: "destructive",
       });
     } finally {

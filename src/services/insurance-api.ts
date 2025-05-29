@@ -1,4 +1,3 @@
-
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
 
 const CHATPDF_API_KEY = "sec_t759nqrP5IPLQM9ssZXIx0aHIK0hiv3k";
@@ -204,46 +203,78 @@ export const getCoverageGaps = async (documentId: string): Promise<string> => {
   }
 };
 
-export const getBenchmarkComparison = async (profile: BusinessProfile): Promise<PolicyBenchmark> => {
+export const getBenchmarkComparison = async (profile: BusinessProfile, documentId?: string): Promise<PolicyBenchmark> => {
   try {
     console.log("Getting benchmark comparison for profile:", profile);
     
-    let mockBenchmark: PolicyBenchmark;
-
-    if (profile.policyType === "individual") {
-      // Individual policy benchmarks
-      const age = profile.individualDetails?.age || 25;
-      const location = profile.individualDetails?.location || "suburban";
-      const familySize = profile.individualDetails?.familySize || 1;
-
-      mockBenchmark = {
-        coverageLimits: `For an individual aged ${age} in a ${location} area with ${familySize} family member(s), recommended coverage includes: Life insurance 10-12x annual income, disability insurance 60-70% of income, and adequate health insurance with low deductibles.`,
-        deductibles: `Recommended deductibles for individuals: Health insurance $500-$2,500, auto insurance $500-$1,000, homeowners/renters $500-$1,500 depending on financial situation.`,
-        missingCoverages: [
-          "Umbrella liability insurance",
-          "Long-term disability insurance", 
-          "Critical illness coverage",
-          "Identity theft protection"
-        ],
-        premiumComparison: `Based on your age and location, you may be paying within market range. Consider bundling policies for discounts.`,
-        benchmarkScore: age < 35 ? 8 : age < 50 ? 7 : 6
-      };
-    } else {
-      // Business policy benchmarks
-      mockBenchmark = {
-        coverageLimits: `For a ${profile.type} business in ${profile.industry} with ${profile.employees} employees, recommended coverage limits are typically higher than standard policies.`,
-        deductibles: `Industry standard deductibles for ${profile.industry} businesses range from $1,000-$5,000 depending on coverage type.`,
-        missingCoverages: [
-          "Cyber liability insurance",
-          "Professional liability coverage",
-          "Business interruption insurance"
-        ],
-        premiumComparison: `Based on your business profile, you may be paying 10-15% above market rate for similar coverage.`,
-        benchmarkScore: 75 / 10
-      };
+    if (!documentId) {
+      throw new Error("Document ID is required for benchmark comparison");
     }
+
+    // Use ChatPDF to analyze the document for benchmark comparison
+    const benchmarkQuestions = [
+      `Analyze this insurance policy for a ${profile.policyType} and provide coverage limits assessment based on the profile: ${JSON.stringify(profile)}`,
+      `What are the deductibles in this policy and how do they compare to industry standards for a ${profile.type} business with ${profile.employees} employees?`,
+      `Identify missing coverages in this policy that would be recommended for a ${profile.type} business in the ${profile.industry} industry.`,
+      `Compare the premium costs mentioned in this policy to industry benchmarks for similar businesses.`,
+      `Rate this policy from 1-10 based on how well it meets the needs of the business profile provided.`
+    ];
+
+    const benchmarkResults = await Promise.all(
+      benchmarkQuestions.map(async (question) => {
+        const response = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
+          method: "POST",
+          headers: {
+            "x-api-key": CHATPDF_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sourceId: documentId,
+            messages: [
+              {
+                role: "user",
+                content: question,
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`ChatPDF benchmark query failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.content;
+      })
+    );
+
+    console.log("Benchmark analysis results:", benchmarkResults);
+
+    const [coverageLimitsResponse, deductiblesResponse, missingCoveragesResponse, premiumResponse, ratingResponse] = benchmarkResults;
     
-    return mockBenchmark;
+    // Parse missing coverages from the response
+    const missingCoverages = missingCoveragesResponse.split('\n')
+      .filter((line: string) => line.trim().length > 0 && (line.includes('•') || line.includes('-') || line.includes('1.') || line.includes('2.')))
+      .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
+      .filter((coverage: string) => coverage.length > 0)
+      .slice(0, 5);
+
+    // Extract rating from response
+    const ratingMatch = ratingResponse.match(/(\d+)(?:\/10|\s*out\s*of\s*10)/i);
+    const benchmarkScore = ratingMatch ? parseInt(ratingMatch[1]) : 
+      (ratingResponse.toLowerCase().includes('excellent') ? 9 :
+       ratingResponse.toLowerCase().includes('good') ? 7 :
+       ratingResponse.toLowerCase().includes('poor') ? 4 : 6);
+
+    const benchmark: PolicyBenchmark = {
+      coverageLimits: coverageLimitsResponse,
+      deductibles: deductiblesResponse,
+      missingCoverages: missingCoverages.length > 0 ? missingCoverages : ["No missing coverages identified"],
+      premiumComparison: premiumResponse,
+      benchmarkScore: Math.min(10, Math.max(1, benchmarkScore))
+    };
+    
+    return benchmark;
   } catch (error) {
     console.error("Error getting benchmark comparison:", error);
     throw error;
