@@ -34,7 +34,7 @@ const TextInput = ({ onTextAdded }: TextInputProps) => {
         name: "Pasted Text",
         type: "text" as const,
         content: text,
-        status: "ready" as const,
+        status: "processing" as const,
       };
       
       // Notify user
@@ -49,10 +49,6 @@ const TextInput = ({ onTextAdded }: TextInputProps) => {
       // Clear the text input
       setText("");
       
-      toast({
-        title: "Text Added Successfully",
-        description: "Your text is ready for analysis. Click 'Analyze Document' to continue.",
-      });
     } catch (error) {
       console.error("Error processing text:", error);
       toast({

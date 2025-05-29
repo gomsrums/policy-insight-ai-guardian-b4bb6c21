@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,14 +11,77 @@ import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import LoginDialog from "@/components/LoginDialog";
 
+interface ComparisonResult {
+  name: string;
+  riskCover: string;
+  coverageGap: string;
+  benchmarkRating: number;
+  premiumComparison: string;
+  coverageLimit: string;
+  missingCoverages: string[];
+}
+
 const Comparison = () => {
   const [quotation1, setQuotation1] = useState("");
   const [quotation2, setQuotation2] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [comparisonResults, setComparisonResults] = useState<any>(null);
+  const [comparisonResults, setComparisonResults] = useState<{
+    policy1: ComparisonResult;
+    policy2: ComparisonResult;
+  } | null>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
+
+  const analyzePolicy = (policyText: string, policyName: string): ComparisonResult => {
+    // Simple analysis based on text content
+    const textLower = policyText.toLowerCase();
+    
+    // Risk Cover Analysis
+    let riskCover = "Low";
+    if (textLower.includes("comprehensive") || textLower.includes("full coverage") || textLower.includes("premium")) {
+      riskCover = "High";
+    } else if (textLower.includes("basic") || textLower.includes("standard")) {
+      riskCover = "Medium";
+    }
+
+    // Coverage Gap Analysis
+    let coverageGap = "Low";
+    const commonCoverages = ["liability", "collision", "comprehensive", "medical", "uninsured"];
+    const missingCount = commonCoverages.filter(coverage => !textLower.includes(coverage)).length;
+    if (missingCount > 3) coverageGap = "High";
+    else if (missingCount > 1) coverageGap = "Medium";
+
+    // Extract premium if mentioned
+    const premiumMatch = policyText.match(/\$[\d,]+/);
+    const premiumComparison = premiumMatch ? `${premiumMatch[0]}/year` : "Premium not specified";
+
+    // Extract coverage limits
+    const limitMatch = policyText.match(/\$[\d,]+,000|\$[\d,]+k/i);
+    const coverageLimit = limitMatch ? limitMatch[0] : "Limits not specified";
+
+    // Identify missing coverages
+    const allCoverages = [
+      "Cyber liability", "Professional liability", "Business interruption",
+      "Umbrella coverage", "Workers compensation", "Directors and officers"
+    ];
+    const missingCoverages = allCoverages.filter(coverage => 
+      !textLower.includes(coverage.toLowerCase())
+    ).slice(0, 3);
+
+    // Benchmark rating based on coverage completeness
+    const benchmarkRating = Math.max(1, 10 - missingCount * 1.5 - (coverageGap === "High" ? 2 : coverageGap === "Medium" ? 1 : 0));
+
+    return {
+      name: policyName,
+      riskCover,
+      coverageGap,
+      benchmarkRating: Math.round(benchmarkRating * 10) / 10,
+      premiumComparison,
+      coverageLimit,
+      missingCoverages
+    };
+  };
 
   const handleCompare = async () => {
     if (!isAuthenticated) {
@@ -36,36 +100,30 @@ const Comparison = () => {
 
     setIsAnalyzing(true);
     
-    // Simulate API call for comparison
-    setTimeout(() => {
-      const mockResults = {
-        policy1: {
-          name: "Policy A",
-          riskCover: "High",
-          coverageGap: "Medium",
-          benchmarkRating: 8.5,
-          premiumComparison: "$1,200/year",
-          coverageLimit: "$500,000",
-          missingCoverages: ["Cyber liability", "Business interruption"]
-        },
-        policy2: {
-          name: "Policy B",
-          riskCover: "Medium",
-          coverageGap: "Low",
-          benchmarkRating: 7.2,
-          premiumComparison: "$1,450/year",
-          coverageLimit: "$750,000",
-          missingCoverages: ["Professional liability"]
-        }
-      };
-      setComparisonResults(mockResults);
-      setIsAnalyzing(false);
-      
+    try {
+      // Analyze both policies
+      const policy1Analysis = analyzePolicy(quotation1, "Policy A");
+      const policy2Analysis = analyzePolicy(quotation2, "Policy B");
+
+      setComparisonResults({
+        policy1: policy1Analysis,
+        policy2: policy2Analysis
+      });
+
       toast({
         title: "Comparison Complete",
         description: "Your insurance policies have been analyzed and compared.",
       });
-    }, 2000);
+    } catch (error) {
+      console.error("Error analyzing policies:", error);
+      toast({
+        title: "Analysis Failed", 
+        description: "There was an error analyzing your policies. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const getRiskBadgeVariant = (level: string) => {
@@ -152,7 +210,7 @@ const Comparison = () => {
           <div className="text-center mb-8">
             <Button 
               onClick={handleCompare}
-              disabled={isAnalyzing || !isAuthenticated}
+              disabled={isAnalyzing || !isAuthenticated || !quotation1.trim() || !quotation2.trim()}
               className="bg-insurance-blue hover:bg-insurance-blue-dark px-8 py-3"
             >
               {isAnalyzing ? (
