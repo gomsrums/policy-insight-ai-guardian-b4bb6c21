@@ -1,14 +1,15 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import LoginDialog from "@/components/LoginDialog";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Loader2 } from "lucide-react";
 
 const Header = () => {
-  const { user, logout, isAuthenticated } = useAuth();
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const { user, profile, signOut, isAuthenticated, loading } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <header className="border-b py-4 px-6 bg-white">
@@ -27,37 +28,37 @@ const Header = () => {
             Comparison
           </Link>
           
-          {isAuthenticated ? (
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm text-gray-500">Loading...</span>
+            </div>
+          ) : isAuthenticated ? (
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-2 text-insurance-gray">
                 <User className="h-4 w-4" />
-                {user?.name}
+                {profile?.name || user?.email?.split('@')[0]}
               </span>
               <Button
-                onClick={logout}
+                onClick={handleSignOut}
                 variant="outline"
                 className="border-insurance-blue text-insurance-blue hover:bg-insurance-blue hover:text-white"
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                Sign Out
               </Button>
             </div>
           ) : (
             <Button
-              onClick={() => setShowLoginDialog(true)}
+              asChild
               variant="outline"
               className="border-insurance-blue text-insurance-blue hover:bg-insurance-blue hover:text-white"
             >
-              Login
+              <Link to="/auth">Sign In</Link>
             </Button>
           )}
         </nav>
       </div>
-      
-      <LoginDialog
-        isOpen={showLoginDialog}
-        onClose={() => setShowLoginDialog(false)}
-      />
     </header>
   );
 };

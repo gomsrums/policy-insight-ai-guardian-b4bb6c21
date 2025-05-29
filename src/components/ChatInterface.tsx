@@ -7,7 +7,7 @@ import { ChatMessage } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
-import LoginDialog from "@/components/LoginDialog";
+import { useNavigate } from "react-router-dom";
 
 interface ChatInterfaceProps {
   sourceId: string | null;
@@ -18,12 +18,12 @@ interface ChatInterfaceProps {
 const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProps) => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
 
   const handleSendMessage = async () => {
     if (!isAuthenticated) {
-      setShowLoginDialog(true);
+      navigate("/auth");
       return;
     }
 
@@ -68,22 +68,26 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4">
+        <p className="text-gray-500 text-center">Loading...</p>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
         <p className="text-gray-500 text-center">
-          Please log in to chat with your document
+          Please sign in to chat with your document
         </p>
         <Button
-          onClick={() => setShowLoginDialog(true)}
+          onClick={() => navigate("/auth")}
           className="bg-insurance-blue hover:bg-insurance-blue-dark"
         >
-          Login to Chat
+          Sign In to Chat
         </Button>
-        <LoginDialog
-          isOpen={showLoginDialog}
-          onClose={() => setShowLoginDialog(false)}
-        />
       </div>
     );
   }

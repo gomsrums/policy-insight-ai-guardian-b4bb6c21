@@ -12,12 +12,24 @@ interface TextInputProps {
 
 const TextInput = ({ onTextAdded }: TextInputProps) => {
   const [text, setText] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = () => {
-    if (text.trim()) {
+  const handleSubmit = async () => {
+    if (!text.trim()) {
+      toast({
+        title: "Empty Text",
+        description: "Please enter some text to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
       // Create a document with the text content
-      const newDocument = {
+      const newDocument: PolicyDocument = {
         id: nanoid(),
         name: "Pasted Text",
         type: "text" as const,
@@ -27,8 +39,8 @@ const TextInput = ({ onTextAdded }: TextInputProps) => {
       
       // Notify user
       toast({
-        title: "Text added",
-        description: "Your text has been added for analysis.",
+        title: "Text Processing",
+        description: "Your text is being prepared for analysis...",
       });
       
       // Pass the document to the parent component
@@ -36,6 +48,20 @@ const TextInput = ({ onTextAdded }: TextInputProps) => {
       
       // Clear the text input
       setText("");
+      
+      toast({
+        title: "Text Added Successfully",
+        description: "Your text is ready for analysis. Click 'Analyze Document' to continue.",
+      });
+    } catch (error) {
+      console.error("Error processing text:", error);
+      toast({
+        title: "Processing Error",
+        description: "There was an error processing your text. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -46,14 +72,15 @@ const TextInput = ({ onTextAdded }: TextInputProps) => {
         value={text}
         onChange={(e) => setText(e.target.value)}
         className="min-h-[150px] md:min-h-[200px] text-sm"
+        disabled={isProcessing}
       />
       <div className="flex justify-end">
         <Button 
           onClick={handleSubmit}
-          disabled={!text.trim()}
+          disabled={!text.trim() || isProcessing}
           className="bg-insurance-blue hover:bg-insurance-blue-dark text-sm px-4 py-2"
         >
-          Analyze Text
+          {isProcessing ? "Processing..." : "Add Text for Analysis"}
         </Button>
       </div>
     </div>
