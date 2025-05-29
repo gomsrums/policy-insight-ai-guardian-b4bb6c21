@@ -10,6 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import LoginDialog from "@/components/LoginDialog";
+import { uploadDocumentForAnalysis } from "@/services/insurance-api";
+import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
+import { nanoid } from "nanoid";
 
 interface ComparisonResult {
   name: string;
@@ -33,54 +36,131 @@ const Comparison = () => {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
-  const analyzePolicy = (policyText: string, policyName: string): ComparisonResult => {
-    // Simple analysis based on text content
-    const textLower = policyText.toLowerCase();
-    
-    // Risk Cover Analysis
-    let riskCover = "Low";
-    if (textLower.includes("comprehensive") || textLower.includes("full coverage") || textLower.includes("premium")) {
-      riskCover = "High";
-    } else if (textLower.includes("basic") || textLower.includes("standard")) {
-      riskCover = "Medium";
+  const createPDFFromText = async (text: string, filename: string): Promise<File> => {
+    const pdfContent = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length ${text.length + 100}
+>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+(${text.replace(/\n/g, ') Tj 0 -14 Td (')}) Tj
+ET
+endstream
+endobj
+
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+0000000380 00000 n 
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+456
+%%EOF`;
+
+    const blob = new Blob([pdfContent], { type: 'application/pdf' });
+    return new File([blob], filename, { type: 'application/pdf' });
+  };
+
+  const analyzeWithChatPDF = async (text: string, policyName: string): Promise<ComparisonResult> => {
+    try {
+      // Convert text to PDF
+      const pdfFile = await createPDFFromText(text, `${policyName.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+      
+      // Create PolicyDocument for ChatPDF analysis
+      const document: PolicyDocument = {
+        id: nanoid(),
+        name: policyName,
+        type: "file",
+        file: pdfFile,
+        status: "processing",
+      };
+
+      // Analyze with ChatPDF
+      const analysis: AnalysisResult = await uploadDocumentForAnalysis(document);
+      
+      // Extract specific information from the analysis
+      const riskCover = analysis.risk_assessment?.overall_risk_level || "Medium";
+      
+      // Extract coverage gap level from analysis
+      let coverageGap = "Low";
+      if (analysis.gaps.length > 3) coverageGap = "High";
+      else if (analysis.gaps.length > 1) coverageGap = "Medium";
+
+      // Calculate benchmark rating based on analysis quality
+      const benchmarkRating = Math.max(1, 10 - (analysis.gaps.length * 1.5));
+
+      // Extract premium info from summary
+      const premiumMatch = analysis.summary.match(/\$[\d,]+/);
+      const premiumComparison = premiumMatch ? `${premiumMatch[0]}/year` : "Premium not specified";
+
+      // Extract coverage limits
+      const limitMatch = analysis.summary.match(/\$[\d,]+,000|\$[\d,]+k/i);
+      const coverageLimit = limitMatch ? limitMatch[0] : "Limits not specified";
+
+      // Use the gaps as missing coverages
+      const missingCoverages = analysis.gaps.slice(0, 3);
+
+      return {
+        name: policyName,
+        riskCover,
+        coverageGap,
+        benchmarkRating: Math.round(benchmarkRating * 10) / 10,
+        premiumComparison,
+        coverageLimit,
+        missingCoverages
+      };
+    } catch (error) {
+      console.error(`Error analyzing ${policyName} with ChatPDF:`, error);
+      throw error;
     }
-
-    // Coverage Gap Analysis
-    let coverageGap = "Low";
-    const commonCoverages = ["liability", "collision", "comprehensive", "medical", "uninsured"];
-    const missingCount = commonCoverages.filter(coverage => !textLower.includes(coverage)).length;
-    if (missingCount > 3) coverageGap = "High";
-    else if (missingCount > 1) coverageGap = "Medium";
-
-    // Extract premium if mentioned
-    const premiumMatch = policyText.match(/\$[\d,]+/);
-    const premiumComparison = premiumMatch ? `${premiumMatch[0]}/year` : "Premium not specified";
-
-    // Extract coverage limits
-    const limitMatch = policyText.match(/\$[\d,]+,000|\$[\d,]+k/i);
-    const coverageLimit = limitMatch ? limitMatch[0] : "Limits not specified";
-
-    // Identify missing coverages
-    const allCoverages = [
-      "Cyber liability", "Professional liability", "Business interruption",
-      "Umbrella coverage", "Workers compensation", "Directors and officers"
-    ];
-    const missingCoverages = allCoverages.filter(coverage => 
-      !textLower.includes(coverage.toLowerCase())
-    ).slice(0, 3);
-
-    // Benchmark rating based on coverage completeness
-    const benchmarkRating = Math.max(1, 10 - missingCount * 1.5 - (coverageGap === "High" ? 2 : coverageGap === "Medium" ? 1 : 0));
-
-    return {
-      name: policyName,
-      riskCover,
-      coverageGap,
-      benchmarkRating: Math.round(benchmarkRating * 10) / 10,
-      premiumComparison,
-      coverageLimit,
-      missingCoverages
-    };
   };
 
   const handleCompare = async () => {
@@ -101,9 +181,16 @@ const Comparison = () => {
     setIsAnalyzing(true);
     
     try {
-      // Analyze both policies
-      const policy1Analysis = analyzePolicy(quotation1, "Policy A");
-      const policy2Analysis = analyzePolicy(quotation2, "Policy B");
+      toast({
+        title: "Converting and Analyzing",
+        description: "Converting your policy texts to PDF and analyzing with ChatPDF...",
+      });
+
+      // Analyze both policies with ChatPDF
+      const [policy1Analysis, policy2Analysis] = await Promise.all([
+        analyzeWithChatPDF(quotation1, "Policy A"),
+        analyzeWithChatPDF(quotation2, "Policy B")
+      ]);
 
       setComparisonResults({
         policy1: policy1Analysis,
@@ -112,13 +199,13 @@ const Comparison = () => {
 
       toast({
         title: "Comparison Complete",
-        description: "Your insurance policies have been analyzed and compared.",
+        description: "Your insurance policies have been analyzed and compared using ChatPDF.",
       });
     } catch (error) {
       console.error("Error analyzing policies:", error);
       toast({
         title: "Analysis Failed", 
-        description: "There was an error analyzing your policies. Please try again.",
+        description: "There was an error analyzing your policies with ChatPDF. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -155,7 +242,7 @@ const Comparison = () => {
               Policy Comparison
             </h1>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Compare two insurance policy quotations side-by-side to make an informed decision
+              Compare two insurance policy quotations side-by-side using ChatPDF AI analysis
             </p>
           </div>
 
@@ -182,11 +269,11 @@ const Comparison = () => {
               </CardHeader>
               <CardContent>
                 <Textarea
-                  placeholder="Paste your first insurance policy quotation here (including premium, coverage details, and terms & conditions)..."
+                  placeholder="Paste your first insurance policy quotation here..."
                   value={quotation1}
                   onChange={(e) => setQuotation1(e.target.value)}
                   className="min-h-[200px]"
-                  disabled={!isAuthenticated}
+                  disabled={!isAuthenticated || isAnalyzing}
                 />
               </CardContent>
             </Card>
@@ -197,11 +284,11 @@ const Comparison = () => {
               </CardHeader>
               <CardContent>
                 <Textarea
-                  placeholder="Paste your second insurance policy quotation here (including premium, coverage details, and terms & conditions)..."
+                  placeholder="Paste your second insurance policy quotation here..."
                   value={quotation2}
                   onChange={(e) => setQuotation2(e.target.value)}
                   className="min-h-[200px]"
-                  disabled={!isAuthenticated}
+                  disabled={!isAuthenticated || isAnalyzing}
                 />
               </CardContent>
             </Card>
@@ -216,9 +303,9 @@ const Comparison = () => {
               {isAnalyzing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  Converting & Analyzing with ChatPDF...
                 </>
-              ) : "Compare Policies"}
+              ) : "Convert to PDF & Compare with ChatPDF"}
             </Button>
           </div>
 
@@ -226,7 +313,7 @@ const Comparison = () => {
             <div className="space-y-8">
               <Card>
                 <CardHeader>
-                  <CardTitle>Comparison Results</CardTitle>
+                  <CardTitle>ChatPDF Analysis Results</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -292,7 +379,7 @@ const Comparison = () => {
                         <TableCell>
                           <div className="space-y-1">
                             {comparisonResults.policy1.missingCoverages.map((coverage: string, index: number) => (
-                              <Badge key={index} variant="outline" className="mr-1">
+                              <Badge key={index} variant="outline" className="mr-1 mb-1">
                                 {coverage}
                               </Badge>
                             ))}
@@ -301,7 +388,7 @@ const Comparison = () => {
                         <TableCell>
                           <div className="space-y-1">
                             {comparisonResults.policy2.missingCoverages.map((coverage: string, index: number) => (
-                              <Badge key={index} variant="outline" className="mr-1">
+                              <Badge key={index} variant="outline" className="mr-1 mb-1">
                                 {coverage}
                               </Badge>
                             ))}
@@ -319,7 +406,7 @@ const Comparison = () => {
             <div className="text-center py-12">
               <p className="text-gray-500">
                 {isAuthenticated 
-                  ? "Paste your insurance policy quotations above and click \"Compare Policies\" to see detailed comparison results"
+                  ? "Paste your insurance policy quotations above and click \"Convert to PDF & Compare\" to see detailed analysis results using ChatPDF"
                   : "Please log in to compare insurance policies"
                 }
               </p>
