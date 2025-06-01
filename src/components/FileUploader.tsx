@@ -1,11 +1,12 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Upload, Camera } from "lucide-react";
+import { Paperclip, Upload, Camera, Loader2 } from "lucide-react";
 import { PolicyDocument } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import Tesseract from 'tesseract.js';
 
 interface FileUploaderProps {
   onFileAdded: (document: PolicyDocument) => void;
@@ -17,7 +18,81 @@ const FileUploader = ({ onFileAdded }: FileUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const { toast } = useToast();
+
+  const createPDFFromText = async (text: string, filename: string): Promise<File> => {
+    const pdfContent = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length ${text.length + 100}
+>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+(${text.replace(/\n/g, ') Tj 0 -14 Td (').replace(/\(/g, '\\(').replace(/\)/g, '\\)')}) Tj
+ET
+endstream
+endobj
+
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+0000000380 00000 n 
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+456
+%%EOF`;
+
+    const blob = new Blob([pdfContent], { type: 'application/pdf' });
+    return new File([blob], filename, { type: 'application/pdf' });
+  };
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -61,7 +136,34 @@ const FileUploader = ({ onFileAdded }: FileUploaderProps) => {
     }
   };
 
-  const handleCapturedImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const performOCR = async (imageFile: File): Promise<string> => {
+    try {
+      setIsProcessingOCR(true);
+      
+      toast({
+        title: "Processing Image",
+        description: "Extracting text from your image using OCR...",
+      });
+
+      const result = await Tesseract.recognize(imageFile, 'eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+          }
+        }
+      });
+
+      console.log('OCR Result:', result.data.text);
+      return result.data.text;
+    } catch (error) {
+      console.error('OCR Error:', error);
+      throw new Error('Failed to extract text from image');
+    } finally {
+      setIsProcessingOCR(false);
+    }
+  };
+
+  const handleCapturedImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -69,21 +171,50 @@ const FileUploader = ({ onFileAdded }: FileUploaderProps) => {
     const previewUrl = URL.createObjectURL(file);
     setCapturedImage(previewUrl);
 
-    // Process the captured image
-    const newFileName = `captured-image-${Date.now()}.jpg`;
-    const imageFile = new File([file], newFileName, { type: file.type });
+    try {
+      // Perform OCR on the captured image
+      const extractedText = await performOCR(file);
+      
+      if (!extractedText.trim()) {
+        toast({
+          title: "No Text Found",
+          description: "Could not extract readable text from the image. Please try with a clearer image.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    onFileAdded({
-      id: nanoid(),
-      name: newFileName,
-      type: "file",
-      file: imageFile,
-      previewUrl: previewUrl,
-      status: "ready",
-    });
+      // Convert extracted text to PDF
+      const pdfFile = await createPDFFromText(extractedText, `captured-policy-${Date.now()}.pdf`);
+      const pdfPreviewUrl = URL.createObjectURL(pdfFile);
 
-    // Close the camera dialog after capturing
-    setShowCamera(false);
+      // Create document with the PDF
+      onFileAdded({
+        id: nanoid(),
+        name: `Captured Policy Image (OCR to PDF)`,
+        type: "file",
+        file: pdfFile,
+        previewUrl: pdfPreviewUrl,
+        status: "ready",
+      });
+
+      toast({
+        title: "Image Processed Successfully",
+        description: "Text extracted from image and converted to PDF for analysis.",
+      });
+
+      // Close the camera dialog
+      setShowCamera(false);
+      setCapturedImage(null);
+      
+    } catch (error) {
+      console.error("Error processing captured image:", error);
+      toast({
+        title: "Processing Failed",
+        description: "Failed to extract text from the image. Please try again with a clearer photo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isValidFileType = (file: File): boolean => {
@@ -148,9 +279,14 @@ const FileUploader = ({ onFileAdded }: FileUploaderProps) => {
           variant="outline" 
           className="flex items-center gap-2 text-sm" 
           onClick={() => setShowCamera(true)}
+          disabled={isProcessingOCR}
         >
-          <Camera className="h-4 w-4" />
-          Take Photo
+          {isProcessingOCR ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Camera className="h-4 w-4" />
+          )}
+          {isProcessingOCR ? "Processing..." : "Take Photo"}
         </Button>
       </div>
 
@@ -168,14 +304,23 @@ const FileUploader = ({ onFileAdded }: FileUploaderProps) => {
               onChange={handleCapturedImage}
               className="hidden"
             />
-            <Button 
-              onClick={handleCameraCapture}
-              className="bg-insurance-blue hover:bg-insurance-blue-dark w-full"
-            >
-              <Camera className="mr-2 h-4 w-4" />
-              Capture Document
-            </Button>
-            {capturedImage && (
+            
+            {!isProcessingOCR ? (
+              <Button 
+                onClick={handleCameraCapture}
+                className="bg-insurance-blue hover:bg-insurance-blue-dark w-full"
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Capture Document
+              </Button>
+            ) : (
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Extracting text from image...</p>
+              </div>
+            )}
+            
+            {capturedImage && !isProcessingOCR && (
               <div className="relative w-full max-w-md">
                 <img 
                   src={capturedImage} 
