@@ -11,10 +11,9 @@ import TextInput from "@/components/TextInput";
 import DocumentPreview from "@/components/DocumentPreview";
 import AnalysisResults from "@/components/AnalysisResults";
 import ChatInterface from "@/components/ChatInterface";
-import BusinessProfileForm from "@/components/BusinessProfileForm";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
-import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
-import { uploadDocumentForAnalysis, sendChatMessage, getBenchmarkComparison, getCoverageGaps } from "@/services/insurance-api";
+import { PolicyDocument, AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
+import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
@@ -23,7 +22,6 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [activeResultTab, setActiveResultTab] = useState("summary");
   const [isChatting, setIsChatting] = useState(false);
-  const [isBenchmarking, setIsBenchmarking] = useState(false);
   const [benchmark, setBenchmark] = useState<PolicyBenchmark | null>(null);
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
   const [coverageGaps, setCoverageGaps] = useState<string[]>([]);
@@ -176,42 +174,6 @@ const Index = () => {
     }
   };
 
-  const handleProfileSubmit = async (profile: BusinessProfile) => {
-    if (!analysisResult?.document_id) {
-      toast({
-        title: "No Document Analyzed",
-        description: "Please upload and analyze a document first before comparing with benchmarks.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsBenchmarking(true);
-    setBenchmark(null);
-    
-    try {
-      // Call the API to get benchmark comparison with the analyzed document
-      const benchmarkResult = await getBenchmarkComparison(profile, analysisResult.document_id);
-      
-      setBenchmark(benchmarkResult);
-      setActiveResultTab("benchmark");
-      
-      toast({
-        title: "Benchmark Comparison Complete",
-        description: `Your ${profile.policyType} policy has been compared against industry standards using ChatPDF analysis.`,
-      });
-    } catch (error) {
-      console.error("Error comparing with benchmark:", error);
-      toast({
-        title: "Benchmark Comparison Failed",
-        description: "There was an error comparing your policy with benchmarks. Please ensure you have analyzed a document first.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsBenchmarking(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -272,11 +234,6 @@ const Index = () => {
                   </Tabs>
                 </CardContent>
               </Card>
-              
-              <BusinessProfileForm 
-                onProfileSubmit={handleProfileSubmit}
-                isLoading={isBenchmarking}
-              />
             </div>
             
             <div className="md:col-span-2">
@@ -286,7 +243,6 @@ const Index = () => {
                     <TabsList className="w-full border-b mb-6">
                       <TabsTrigger value="summary" className="flex-1">Analysis</TabsTrigger>
                       <TabsTrigger value="chat" className="flex-1">Chat with Document</TabsTrigger>
-                      <TabsTrigger value="benchmark" className="flex-1" disabled={!benchmark}>Benchmarks</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="summary">
@@ -320,33 +276,6 @@ const Index = () => {
                         onSendMessage={handleSendMessage}
                         isLoading={isChatting}
                       />
-                    </TabsContent>
-                    
-                    <TabsContent value="benchmark">
-                      {isBenchmarking && (
-                        <BenchmarkComparison
-                          benchmark={{
-                            coverageLimits: "",
-                            deductibles: "",
-                            missingCoverages: [],
-                            premiumComparison: "",
-                            benchmarkScore: 0
-                          }}
-                          isLoading
-                        />
-                      )}
-                      
-                      {benchmark && !isBenchmarking && (
-                        <BenchmarkComparison benchmark={benchmark} />
-                      )}
-                      
-                      {!benchmark && !isBenchmarking && (
-                        <div className="text-center py-12">
-                          <p className="text-gray-500">
-                            Fill in your profile information to compare with benchmarks
-                          </p>
-                        </div>
-                      )}
                     </TabsContent>
                   </Tabs>
                 </CardContent>

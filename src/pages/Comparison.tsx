@@ -5,11 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import LoginDialog from "@/components/LoginDialog";
+import FileUploader from "@/components/FileUploader";
 import { uploadDocumentForAnalysis } from "@/services/insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
@@ -27,6 +29,9 @@ interface ComparisonResult {
 const Comparison = () => {
   const [quotation1, setQuotation1] = useState("");
   const [quotation2, setQuotation2] = useState("");
+  const [policy1Document, setPolicy1Document] = useState<PolicyDocument | null>(null);
+  const [policy2Document, setPolicy2Document] = useState<PolicyDocument | null>(null);
+  const [activeTab, setActiveTab] = useState("text");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [comparisonResults, setComparisonResults] = useState<{
     policy1: ComparisonResult;
@@ -109,20 +114,8 @@ startxref
     return new File([blob], filename, { type: 'application/pdf' });
   };
 
-  const analyzeWithChatPDF = async (text: string, policyName: string): Promise<ComparisonResult> => {
+  const analyzeWithChatPDF = async (document: PolicyDocument, policyName: string): Promise<ComparisonResult> => {
     try {
-      // Convert text to PDF
-      const pdfFile = await createPDFFromText(text, `${policyName.toLowerCase().replace(/\s+/g, '-')}.pdf`);
-      
-      // Create PolicyDocument for ChatPDF analysis
-      const document: PolicyDocument = {
-        id: nanoid(),
-        name: policyName,
-        type: "file",
-        file: pdfFile,
-        status: "processing",
-      };
-
       // Analyze with ChatPDF
       const analysis: AnalysisResult = await uploadDocumentForAnalysis(document);
       
@@ -163,33 +156,78 @@ startxref
     }
   };
 
+  const handlePolicy1FileAdded = (document: PolicyDocument) => {
+    setPolicy1Document(document);
+  };
+
+  const handlePolicy2FileAdded = (document: PolicyDocument) => {
+    setPolicy2Document(document);
+  };
+
   const handleCompare = async () => {
     if (!isAuthenticated) {
       setShowLoginDialog(true);
       return;
     }
 
-    if (!quotation1.trim() || !quotation2.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please paste both insurance policy quotations to compare.",
-        variant: "destructive",
-      });
-      return;
+    let document1: PolicyDocument;
+    let document2: PolicyDocument;
+
+    if (activeTab === "text") {
+      if (!quotation1.trim() || !quotation2.trim()) {
+        toast({
+          title: "Missing Information",
+          description: "Please paste both insurance policy quotations to compare.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Convert text to PDF documents
+      const pdfFile1 = await createPDFFromText(quotation1, "policy-1.pdf");
+      const pdfFile2 = await createPDFFromText(quotation2, "policy-2.pdf");
+
+      document1 = {
+        id: nanoid(),
+        name: "Policy A",
+        type: "file",
+        file: pdfFile1,
+        status: "processing",
+      };
+
+      document2 = {
+        id: nanoid(),
+        name: "Policy B", 
+        type: "file",
+        file: pdfFile2,
+        status: "processing",
+      };
+    } else {
+      if (!policy1Document || !policy2Document) {
+        toast({
+          title: "Missing Documents",
+          description: "Please upload both insurance policy documents to compare.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      document1 = policy1Document;
+      document2 = policy2Document;
     }
 
     setIsAnalyzing(true);
     
     try {
       toast({
-        title: "Converting and Analyzing",
-        description: "Converting your policy texts to PDF and analyzing with ChatPDF...",
+        title: "Analyzing Policies",
+        description: "Converting and analyzing your policies with ChatPDF...",
       });
 
       // Analyze both policies with ChatPDF
       const [policy1Analysis, policy2Analysis] = await Promise.all([
-        analyzeWithChatPDF(quotation1, "Policy A"),
-        analyzeWithChatPDF(quotation2, "Policy B")
+        analyzeWithChatPDF(document1, "Policy A"),
+        analyzeWithChatPDF(document2, "Policy B")
       ]);
 
       setComparisonResults({
@@ -262,50 +300,105 @@ startxref
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Policy Quotation 1</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Paste your first insurance policy quotation here..."
-                  value={quotation1}
-                  onChange={(e) => setQuotation1(e.target.value)}
-                  className="min-h-[200px]"
-                  disabled={!isAuthenticated || isAnalyzing}
-                />
-              </CardContent>
-            </Card>
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Policy Input Method</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="text">Paste Text</TabsTrigger>
+                  <TabsTrigger value="upload">Upload Documents</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="text" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Policy Quotation 1</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Textarea
+                          placeholder="Paste your first insurance policy quotation here..."
+                          value={quotation1}
+                          onChange={(e) => setQuotation1(e.target.value)}
+                          className="min-h-[200px]"
+                          disabled={!isAuthenticated || isAnalyzing}
+                        />
+                      </CardContent>
+                    </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Policy Quotation 2</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Paste your second insurance policy quotation here..."
-                  value={quotation2}
-                  onChange={(e) => setQuotation2(e.target.value)}
-                  className="min-h-[200px]"
-                  disabled={!isAuthenticated || isAnalyzing}
-                />
-              </CardContent>
-            </Card>
-          </div>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Policy Quotation 2</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Textarea
+                          placeholder="Paste your second insurance policy quotation here..."
+                          value={quotation2}
+                          onChange={(e) => setQuotation2(e.target.value)}
+                          className="min-h-[200px]"
+                          disabled={!isAuthenticated || isAnalyzing}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="upload" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Policy Document 1</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <FileUploader onFileAdded={handlePolicy1FileAdded} />
+                        {policy1Document && (
+                          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                            <p className="text-sm font-medium text-green-700">
+                              Document uploaded: {policy1Document.name}
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Policy Document 2</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <FileUploader onFileAdded={handlePolicy2FileAdded} />
+                        {policy2Document && (
+                          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                            <p className="text-sm font-medium text-green-700">
+                              Document uploaded: {policy2Document.name}
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
 
           <div className="text-center mb-8">
             <Button 
               onClick={handleCompare}
-              disabled={isAnalyzing || !isAuthenticated || !quotation1.trim() || !quotation2.trim()}
+              disabled={isAnalyzing || !isAuthenticated || 
+                (activeTab === "text" && (!quotation1.trim() || !quotation2.trim())) ||
+                (activeTab === "upload" && (!policy1Document || !policy2Document))
+              }
               className="bg-insurance-blue hover:bg-insurance-blue-dark px-8 py-3"
             >
               {isAnalyzing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Converting & Analyzing with ChatPDF...
+                  Analyzing with ChatPDF...
                 </>
-              ) : "Convert to PDF & Compare with ChatPDF"}
+              ) : "Compare Policies with ChatPDF"}
             </Button>
           </div>
 
@@ -406,7 +499,7 @@ startxref
             <div className="text-center py-12">
               <p className="text-gray-500">
                 {isAuthenticated 
-                  ? "Paste your insurance policy quotations above and click \"Convert to PDF & Compare\" to see detailed analysis results using ChatPDF"
+                  ? "Upload your insurance policy documents or paste policy text above and click \"Compare Policies\" to see detailed analysis results using ChatPDF"
                   : "Please log in to compare insurance policies"
                 }
               </p>
