@@ -9,6 +9,74 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      broker_companies: {
+        Row: {
+          company_name: string
+          created_at: string
+          email: string
+          id: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          email: string
+          id?: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compliance_reports: {
+        Row: {
+          broker_id: string
+          compliance_score: number | null
+          created_at: string
+          flagged_issues: Json | null
+          id: string
+          policy_name: string
+          recommendations: Json | null
+          risk_level: string | null
+        }
+        Insert: {
+          broker_id: string
+          compliance_score?: number | null
+          created_at?: string
+          flagged_issues?: Json | null
+          id?: string
+          policy_name: string
+          recommendations?: Json | null
+          risk_level?: string | null
+        }
+        Update: {
+          broker_id?: string
+          compliance_score?: number | null
+          created_at?: string
+          flagged_issues?: Json | null
+          id?: string
+          policy_name?: string
+          recommendations?: Json | null
+          risk_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_reports_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "broker_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -30,6 +98,36 @@ export type Database = {
           id?: string
           name?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      regulations: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          last_updated: string
+          mandatory: boolean
+          region: string
+          regulation_text: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          mandatory?: boolean
+          region: string
+          regulation_text: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          mandatory?: boolean
+          region?: string
+          regulation_text?: string
         }
         Relationships: []
       }

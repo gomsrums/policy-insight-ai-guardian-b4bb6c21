@@ -27,6 +27,9 @@ const Header = () => {
           <Link to="/comparison" className="text-insurance-gray hover:text-insurance-blue transition-colors">
             Comparison
           </Link>
+          <Link to="/brokers" className="text-insurance-gray hover:text-insurance-blue transition-colors">
+            Brokers
+          </Link>
           
           {loading ? (
             <div className="flex items-center gap-2">
