@@ -165,8 +165,8 @@ const ComplianceChecker = () => {
             policy_name: policyName,
             compliance_score: complianceScore,
             risk_level: riskLevel,
-            flagged_issues: flaggedIssues as any,
-            recommendations: analysis.recommendations as any
+            flagged_issues: JSON.parse(JSON.stringify(flaggedIssues)),
+            recommendations: JSON.parse(JSON.stringify(analysis.recommendations))
           });
       }
 
