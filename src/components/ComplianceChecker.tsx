@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { FileUploader } from "./FileUploader";
+import FileUploader from "./FileUploader";
 import { uploadDocumentForAnalysis } from "@/services/insurance-api";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +45,13 @@ const ComplianceChecker = () => {
     "Texas", 
     "New York",
     "Florida",
-    "Illinois"
+    "Illinois",
+    "United Kingdom",
+    "Germany",
+    "France",
+    "Netherlands",
+    "India",
+    "Singapore"
   ];
 
   const handleDocumentUpload = async (document: any) => {
@@ -150,20 +156,18 @@ const ComplianceChecker = () => {
 
       setComplianceReport(report);
 
-      // Save the compliance report to database
+      // Save the compliance report to database - fix the insert call
       if (broker) {
         await supabase
           .from('compliance_reports')
-          .insert([
-            {
-              broker_id: broker.id,
-              policy_name: policyName,
-              compliance_score: complianceScore,
-              risk_level: riskLevel,
-              flagged_issues: flaggedIssues,
-              recommendations: analysis.recommendations
-            }
-          ]);
+          .insert({
+            broker_id: broker.id,
+            policy_name: policyName,
+            compliance_score: complianceScore,
+            risk_level: riskLevel,
+            flagged_issues: flaggedIssues as any,
+            recommendations: analysis.recommendations as any
+          });
       }
 
       toast({

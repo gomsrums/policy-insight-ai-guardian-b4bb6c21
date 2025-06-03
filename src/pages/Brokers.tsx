@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useBrokerAuth } from "@/contexts/BrokerAuthContext";
-import { ComplianceChecker } from "@/components/ComplianceChecker";
+import ComplianceChecker from "@/components/ComplianceChecker";
 import Header from "@/components/Header";
 import { Building2, Shield, FileCheck, Users, ArrowRight } from "lucide-react";
 
