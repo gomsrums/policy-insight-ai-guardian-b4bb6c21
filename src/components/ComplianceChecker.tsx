@@ -37,6 +37,7 @@ const ComplianceChecker = () => {
   const [policyName, setPolicyName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [complianceReport, setComplianceReport] = useState<ComplianceReport | null>(null);
+  const [uploadedDocument, setUploadedDocument] = useState<any>(null);
   const { broker } = useBrokerAuth();
   const { toast } = useToast();
 
@@ -64,13 +65,33 @@ const ComplianceChecker = () => {
       return;
     }
 
+    console.log("Document uploaded:", document);
+    setUploadedDocument(document);
+    
+    toast({
+      title: "Document Uploaded",
+      description: "Document uploaded successfully. Click 'Analyze Compliance' to start analysis.",
+    });
+  };
+
+  const analyzeCompliance = async () => {
+    if (!uploadedDocument) {
+      toast({
+        title: "No Document",
+        description: "Please upload a document first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     
     try {
-      console.log("Starting compliance analysis for document:", document.name);
+      console.log("Starting compliance analysis for document:", uploadedDocument.name);
       
       // First, analyze the document using the existing API
-      const analysis = await uploadDocumentForAnalysis(document);
+      const analysis = await uploadDocumentForAnalysis(uploadedDocument);
+      console.log("Document analysis result:", analysis);
       
       // Get regulations for the selected region
       const { data: regulations, error: regError } = await supabase
@@ -79,8 +100,11 @@ const ComplianceChecker = () => {
         .eq('region', selectedRegion);
 
       if (regError) {
+        console.error("Error fetching regulations:", regError);
         throw new Error("Failed to fetch regulations");
       }
+
+      console.log("Found regulations for", selectedRegion, ":", regulations?.length || 0);
 
       // Simulate compliance checking logic
       const totalRegulations = regulations?.length || 0;
@@ -109,6 +133,14 @@ const ComplianceChecker = () => {
                 severity: 'high'
               });
             }
+            if (regulationTextLower.includes('fire') && !summaryLower.includes('fire')) {
+              flaggedIssues.push({
+                type: 'missing_coverage',
+                description: 'Missing mandatory fire coverage',
+                regulation: regulation.regulation_text,
+                severity: 'medium'
+              });
+            }
           }
           
           if (regulation.category === 'premiums') {
@@ -121,22 +153,33 @@ const ComplianceChecker = () => {
               });
             }
           }
+
+          if (regulation.category === 'claims') {
+            if (regulationTextLower.includes('claim processing') && !summaryLower.includes('claim')) {
+              flaggedIssues.push({
+                type: 'ambiguous_term',
+                description: 'Claims processing terms may be ambiguous or missing',
+                regulation: regulation.regulation_text,
+                severity: 'medium'
+              });
+            }
+          }
         }
       });
 
       // Add some additional checks based on analysis gaps
       analysis.gaps.forEach((gap, index) => {
-        if (index < 2) { // Limit to first 2 gaps
+        if (index < 3) { // Limit to first 3 gaps
           flaggedIssues.push({
             type: 'missing_coverage',
             description: gap,
             regulation: 'General coverage requirement',
-            severity: 'medium'
+            severity: index === 0 ? 'high' : 'medium'
           });
         }
       });
 
-      const passedRegulations = totalRegulations - flaggedIssues.length;
+      const passedRegulations = Math.max(0, totalRegulations - flaggedIssues.length);
       const complianceScore = totalRegulations > 0 ? Math.round((passedRegulations / totalRegulations) * 100) : 0;
       
       let riskLevel: 'low' | 'medium' | 'high' = 'low';
@@ -154,11 +197,12 @@ const ComplianceChecker = () => {
         passedRegulations
       };
 
+      console.log("Compliance report generated:", report);
       setComplianceReport(report);
 
-      // Save the compliance report to database - fix the insert call
+      // Save the compliance report to database
       if (broker) {
-        await supabase
+        const { error: saveError } = await supabase
           .from('compliance_reports')
           .insert({
             broker_id: broker.id,
@@ -168,11 +212,17 @@ const ComplianceChecker = () => {
             flagged_issues: JSON.parse(JSON.stringify(flaggedIssues)),
             recommendations: JSON.parse(JSON.stringify(analysis.recommendations))
           });
+
+        if (saveError) {
+          console.error("Error saving compliance report:", saveError);
+        } else {
+          console.log("Compliance report saved to database");
+        }
       }
 
       toast({
         title: "Compliance Analysis Complete",
-        description: `Found ${flaggedIssues.length} potential compliance issues.`,
+        description: `Analysis completed. Compliance Score: ${complianceScore}%. Found ${flaggedIssues.length} potential issues.`,
       });
 
     } catch (error) {
@@ -254,11 +304,43 @@ const ComplianceChecker = () => {
             />
           </div>
 
+          {uploadedDocument && (
+            <Alert className="border-green-200 bg-green-50">
+              <FileText className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                Document "{uploadedDocument.name}" uploaded successfully. Ready for compliance analysis.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {uploadedDocument && (
+            <div className="flex justify-center">
+              <Button
+                onClick={analyzeCompliance}
+                disabled={isAnalyzing || !selectedRegion || !policyName}
+                className="bg-insurance-blue hover:bg-insurance-blue-dark"
+                size="lg"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Analyzing Compliance...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Analyze Compliance
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
           {isAnalyzing && (
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
               <AlertDescription>
-                Analyzing policy document for regulatory compliance...
+                Analyzing policy document for regulatory compliance against {selectedRegion} regulations...
               </AlertDescription>
             </Alert>
           )}
@@ -273,7 +355,7 @@ const ComplianceChecker = () => {
               Compliance Report: {complianceReport.policyName}
             </CardTitle>
             <CardDescription>
-              Region: {complianceReport.region}
+              Region: {complianceReport.region} | Analysis completed
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -296,9 +378,9 @@ const ComplianceChecker = () => {
             </div>
 
             {/* Flagged Issues */}
-            {complianceReport.flaggedIssues.length > 0 && (
+            {complianceReport.flaggedIssues.length > 0 ? (
               <div className="space-y-3">
-                <h3 className="font-semibold text-red-700">Flagged Issues</h3>
+                <h3 className="font-semibold text-red-700">Flagged Issues ({complianceReport.flaggedIssues.length})</h3>
                 {complianceReport.flaggedIssues.map((issue, index) => (
                   <Alert key={index} className="border-red-200">
                     <div className="flex items-start gap-3">
@@ -310,20 +392,35 @@ const ComplianceChecker = () => {
                         <p className="text-sm text-gray-600 mt-1">
                           Regulation: {issue.regulation}
                         </p>
-                        <Badge variant="outline" className="mt-2">
-                          {issue.type.replace('_', ' ').toUpperCase()}
-                        </Badge>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {issue.type.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                          <Badge variant="outline" className={`text-xs ${
+                            issue.severity === 'high' ? 'text-red-600' : 
+                            issue.severity === 'medium' ? 'text-orange-600' : 'text-yellow-600'
+                          }`}>
+                            {issue.severity.toUpperCase()} SEVERITY
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </Alert>
                 ))}
               </div>
+            ) : (
+              <Alert className="border-green-200 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  No compliance issues detected. The policy appears to meet all regulatory requirements.
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Recommendations */}
             {complianceReport.recommendations.length > 0 && (
               <div className="space-y-3">
-                <h3 className="font-semibold text-green-700">Recommendations</h3>
+                <h3 className="font-semibold text-green-700">Recommendations ({complianceReport.recommendations.length})</h3>
                 <div className="space-y-2">
                   {complianceReport.recommendations.map((recommendation, index) => (
                     <Alert key={index} className="border-green-200">
@@ -341,6 +438,17 @@ const ComplianceChecker = () => {
               </Button>
               <Button variant="outline">
                 Save for Later
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setComplianceReport(null);
+                  setUploadedDocument(null);
+                  setPolicyName("");
+                  setSelectedRegion("");
+                }}
+              >
+                New Analysis
               </Button>
             </div>
           </CardContent>
