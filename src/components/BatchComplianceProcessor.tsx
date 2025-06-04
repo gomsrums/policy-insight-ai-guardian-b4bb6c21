@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileUploader } from "./FileUploader";
+import FileUploader from "./FileUploader";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Play, Download, FileText, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 
@@ -74,14 +74,14 @@ const BatchComplianceProcessor: React.FC<BatchComplianceProcessorProps> = ({ reg
         // Mock compliance results - replace with actual analysis
         const mockResult = {
           complianceScore: Math.floor(Math.random() * 40) + 60, // 60-100
-          riskLevel: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low',
+          riskLevel: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low' as 'low' | 'medium' | 'high',
           issuesCount: Math.floor(Math.random() * 5),
         };
 
         setDocuments(prev => prev.map(d => 
           d.id === doc.id ? { 
             ...d, 
-            status: 'completed',
+            status: 'completed' as const,
             ...mockResult
           } : d
         ));
@@ -90,7 +90,7 @@ const BatchComplianceProcessor: React.FC<BatchComplianceProcessorProps> = ({ reg
         
       } catch (error) {
         setDocuments(prev => prev.map(d => 
-          d.id === doc.id ? { ...d, status: 'error' } : d
+          d.id === doc.id ? { ...d, status: 'error' as const } : d
         ));
       }
 

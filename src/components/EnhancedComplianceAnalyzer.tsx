@@ -2,6 +2,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocumentForAnalysis } from "@/services/insurance-api";
 
+interface PolicyDocument {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  content?: string;
+  file?: File;
+}
+
 interface ComplianceAnalysisResult {
   complianceScore: number;
   riskLevel: 'low' | 'medium' | 'high';
@@ -24,11 +33,16 @@ interface ComplianceAnalysisResult {
 }
 
 export class EnhancedComplianceAnalyzer {
-  static async analyzeDocument(document: File, region: string, policyName: string): Promise<ComplianceAnalysisResult> {
-    console.log("Starting enhanced compliance analysis for:", document.name);
+  static async analyzeDocument(document: PolicyDocument | File, region: string, policyName: string): Promise<ComplianceAnalysisResult> {
+    console.log("Starting enhanced compliance analysis for:", document instanceof File ? document.name : document.name);
     
     // Step 1: Extract and analyze document content
-    const documentAnalysis = await uploadDocumentForAnalysis(document);
+    const documentToAnalyze = document instanceof File ? document : document.file;
+    if (!documentToAnalyze) {
+      throw new Error("No file available for analysis");
+    }
+    
+    const documentAnalysis = await uploadDocumentForAnalysis(documentToAnalyze);
     console.log("Document analysis completed:", documentAnalysis);
     
     // Step 2: Fetch all regulations for the region
