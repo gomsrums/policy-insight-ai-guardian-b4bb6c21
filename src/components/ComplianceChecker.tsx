@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,12 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FileUploader from "./FileUploader";
-import { uploadDocumentForAnalysis } from "@/services/insurance-api";
+import BatchComplianceProcessor from "./BatchComplianceProcessor";
+import { EnhancedComplianceAnalyzer } from "./EnhancedComplianceAnalyzer";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useBrokerAuth } from "@/contexts/BrokerAuthContext";
-import { CheckCircle, XCircle, AlertTriangle, FileText, Shield, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, FileText, Shield, Loader2, BarChart3 } from "lucide-react";
 
 interface ComplianceIssue {
   type: 'missing_coverage' | 'non_compliant_clause' | 'ambiguous_term';
@@ -38,6 +39,7 @@ const ComplianceChecker = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [complianceReport, setComplianceReport] = useState<ComplianceReport | null>(null);
   const [uploadedDocument, setUploadedDocument] = useState<any>(null);
+  const [batchResults, setBatchResults] = useState<any[]>([]);
   const { broker } = useBrokerAuth();
   const { toast } = useToast();
 
@@ -87,117 +89,27 @@ const ComplianceChecker = () => {
     setIsAnalyzing(true);
     
     try {
-      console.log("Starting compliance analysis for document:", uploadedDocument.name);
+      console.log("Starting enhanced compliance analysis for document:", uploadedDocument.name);
       
-      // First, analyze the document using the existing API
-      const analysis = await uploadDocumentForAnalysis(uploadedDocument);
-      console.log("Document analysis result:", analysis);
-      
-      // Get regulations for the selected region
-      const { data: regulations, error: regError } = await supabase
-        .from('regulations')
-        .select('*')
-        .eq('region', selectedRegion);
-
-      if (regError) {
-        console.error("Error fetching regulations:", regError);
-        throw new Error("Failed to fetch regulations");
-      }
-
-      console.log("Found regulations for", selectedRegion, ":", regulations?.length || 0);
-
-      // Simulate compliance checking logic
-      const totalRegulations = regulations?.length || 0;
-      const flaggedIssues: ComplianceIssue[] = [];
-      
-      // Check for specific compliance issues based on regulations
-      regulations?.forEach((regulation) => {
-        const summaryLower = analysis.summary.toLowerCase();
-        const regulationTextLower = regulation.regulation_text.toLowerCase();
-        
-        if (regulation.mandatory) {
-          if (regulation.category === 'coverage') {
-            if (regulationTextLower.includes('mental health') && !summaryLower.includes('mental health')) {
-              flaggedIssues.push({
-                type: 'missing_coverage',
-                description: 'Missing mandatory mental health services coverage',
-                regulation: regulation.regulation_text,
-                severity: 'high'
-              });
-            }
-            if (regulationTextLower.includes('liability') && !summaryLower.includes('liability')) {
-              flaggedIssues.push({
-                type: 'missing_coverage',
-                description: 'Missing required liability coverage',
-                regulation: regulation.regulation_text,
-                severity: 'high'
-              });
-            }
-            if (regulationTextLower.includes('fire') && !summaryLower.includes('fire')) {
-              flaggedIssues.push({
-                type: 'missing_coverage',
-                description: 'Missing mandatory fire coverage',
-                regulation: regulation.regulation_text,
-                severity: 'medium'
-              });
-            }
-          }
-          
-          if (regulation.category === 'premiums') {
-            if (regulationTextLower.includes('premium increase') && summaryLower.includes('increase')) {
-              flaggedIssues.push({
-                type: 'non_compliant_clause',
-                description: 'Premium increase clause may not comply with regulations',
-                regulation: regulation.regulation_text,
-                severity: 'medium'
-              });
-            }
-          }
-
-          if (regulation.category === 'claims') {
-            if (regulationTextLower.includes('claim processing') && !summaryLower.includes('claim')) {
-              flaggedIssues.push({
-                type: 'ambiguous_term',
-                description: 'Claims processing terms may be ambiguous or missing',
-                regulation: regulation.regulation_text,
-                severity: 'medium'
-              });
-            }
-          }
-        }
-      });
-
-      // Add some additional checks based on analysis gaps
-      analysis.gaps.forEach((gap, index) => {
-        if (index < 3) { // Limit to first 3 gaps
-          flaggedIssues.push({
-            type: 'missing_coverage',
-            description: gap,
-            regulation: 'General coverage requirement',
-            severity: index === 0 ? 'high' : 'medium'
-          });
-        }
-      });
-
-      const passedRegulations = Math.max(0, totalRegulations - flaggedIssues.length);
-      const complianceScore = totalRegulations > 0 ? Math.round((passedRegulations / totalRegulations) * 100) : 0;
-      
-      let riskLevel: 'low' | 'medium' | 'high' = 'low';
-      if (complianceScore < 60) riskLevel = 'high';
-      else if (complianceScore < 80) riskLevel = 'medium';
+      // Use the enhanced analyzer
+      const analysisResult = await EnhancedComplianceAnalyzer.analyzeDocument(
+        uploadedDocument, 
+        selectedRegion, 
+        policyName
+      );
 
       const report: ComplianceReport = {
         policyName,
         region: selectedRegion,
-        complianceScore,
-        riskLevel,
-        flaggedIssues,
-        recommendations: analysis.recommendations.slice(0, 5),
-        totalRegulations,
-        passedRegulations
+        complianceScore: analysisResult.complianceScore,
+        riskLevel: analysisResult.riskLevel,
+        flaggedIssues: analysisResult.flaggedIssues,
+        recommendations: analysisResult.recommendations,
+        totalRegulations: analysisResult.totalRegulations,
+        passedRegulations: analysisResult.passedRegulations
       };
 
-      console.log("Compliance report generated:", report);
+      console.log("Enhanced compliance report generated:", report);
       setComplianceReport(report);
 
       // Save the compliance report to database
@@ -207,10 +119,10 @@ const ComplianceChecker = () => {
           .insert({
             broker_id: broker.id,
             policy_name: policyName,
-            compliance_score: complianceScore,
-            risk_level: riskLevel,
-            flagged_issues: JSON.parse(JSON.stringify(flaggedIssues)),
-            recommendations: JSON.parse(JSON.stringify(analysis.recommendations))
+            compliance_score: analysisResult.complianceScore,
+            risk_level: analysisResult.riskLevel,
+            flagged_issues: JSON.parse(JSON.stringify(analysisResult.flaggedIssues)),
+            recommendations: JSON.parse(JSON.stringify(analysisResult.recommendations))
           });
 
         if (saveError) {
@@ -222,7 +134,7 @@ const ComplianceChecker = () => {
 
       toast({
         title: "Compliance Analysis Complete",
-        description: `Analysis completed. Compliance Score: ${complianceScore}%. Found ${flaggedIssues.length} potential issues.`,
+        description: `Analysis completed. Compliance Score: ${analysisResult.complianceScore}%. Found ${analysisResult.flaggedIssues.length} potential issues.`,
       });
 
     } catch (error) {
@@ -257,95 +169,142 @@ const ComplianceChecker = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Regulatory Compliance Checker
-          </CardTitle>
-          <CardDescription>
-            Upload a policy document to check compliance with regional regulations
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="policy-name">Policy Name</Label>
-              <Input
-                id="policy-name"
-                placeholder="Enter policy name"
-                value={policyName}
-                onChange={(e) => setPolicyName(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="region">Region</Label>
-              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select region" />
-                </SelectTrigger>
-                <SelectContent>
-                  {regions.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <Tabs defaultValue="single" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="single">Single Document Analysis</TabsTrigger>
+          <TabsTrigger value="batch">Batch Processing</TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-2">
-            <Label>Policy Document</Label>
-            <FileUploader 
-              onDocumentUploaded={handleDocumentUpload}
-              showTakePhotoOnly={false}
-            />
-          </div>
+        <TabsContent value="single">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Regulatory Compliance Checker
+              </CardTitle>
+              <CardDescription>
+                Upload a policy document to check compliance with regional regulations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="policy-name">Policy Name</Label>
+                  <Input
+                    id="policy-name"
+                    placeholder="Enter policy name"
+                    value={policyName}
+                    onChange={(e) => setPolicyName(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="region">Region</Label>
+                  <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regions.map((region) => (
+                        <SelectItem key={region} value={region}>
+                          {region}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-          {uploadedDocument && (
-            <Alert className="border-green-200 bg-green-50">
-              <FileText className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                Document "{uploadedDocument.name}" uploaded successfully. Ready for compliance analysis.
-              </AlertDescription>
-            </Alert>
+              <div className="space-y-2">
+                <Label>Policy Document</Label>
+                <FileUploader 
+                  onDocumentUploaded={handleDocumentUpload}
+                  showTakePhotoOnly={false}
+                />
+              </div>
+
+              {uploadedDocument && (
+                <Alert className="border-green-200 bg-green-50">
+                  <FileText className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Document "{uploadedDocument.name}" uploaded successfully. Ready for compliance analysis.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {uploadedDocument && (
+                <div className="flex justify-center">
+                  <Button
+                    onClick={analyzeCompliance}
+                    disabled={isAnalyzing || !selectedRegion || !policyName}
+                    className="bg-insurance-blue hover:bg-insurance-blue-dark"
+                    size="lg"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analyzing Compliance...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Analyze Compliance
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {isAnalyzing && (
+                <Alert>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <AlertDescription>
+                    Analyzing policy document for regulatory compliance against {selectedRegion} regulations...
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="batch">
+          <BatchComplianceProcessor 
+            region={selectedRegion}
+            onAnalysisComplete={setBatchResults}
+          />
+          
+          {batchResults.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Batch Analysis Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{batchResults.length}</div>
+                    <div className="text-sm text-gray-600">Documents Processed</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {Math.round(batchResults.reduce((acc, r) => acc + r.complianceScore, 0) / batchResults.length)}%
+                    </div>
+                    <div className="text-sm text-gray-600">Average Compliance</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">
+                      {batchResults.filter(r => r.riskLevel === 'high').length}
+                    </div>
+                    <div className="text-sm text-gray-600">High Risk Documents</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
-
-          {uploadedDocument && (
-            <div className="flex justify-center">
-              <Button
-                onClick={analyzeCompliance}
-                disabled={isAnalyzing || !selectedRegion || !policyName}
-                className="bg-insurance-blue hover:bg-insurance-blue-dark"
-                size="lg"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analyzing Compliance...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-4 w-4 mr-2" />
-                    Analyze Compliance
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-
-          {isAnalyzing && (
-            <Alert>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertDescription>
-                Analyzing policy document for regulatory compliance against {selectedRegion} regulations...
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
 
       {complianceReport && (
         <Card>
