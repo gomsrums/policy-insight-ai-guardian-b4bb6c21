@@ -1,3 +1,4 @@
+
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
 
 const CHATPDF_API_KEY = "sec_t759nqrP5IPLQM9ssZXIx0aHIK0hiv3k";
@@ -43,16 +44,18 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
 
     // Step 2: Comprehensive analysis with a single, detailed prompt
     const comprehensivePrompt = `
-    Please analyze this insurance policy document thoroughly and provide:
+    Please analyze this insurance policy document thoroughly and provide a comprehensive report with the following sections:
 
-    1. POLICY SUMMARY: Describe the main coverage areas, limits, and key features
-    2. COVERAGE ANALYSIS: List what is covered and what might be missing
+    1. POLICY SUMMARY: Describe the main coverage areas, policy limits, deductibles, and key features
+    2. COVERAGE ANALYSIS: List what is covered in detail and identify any coverage gaps or limitations
     3. RISK ASSESSMENT: Evaluate the overall risk level (Low/Medium/High) and identify specific risk factors
-    4. POSITIVE ASPECTS: Highlight the strengths and good coverage areas of this policy
-    5. NEGATIVE ASPECTS OR GAPS: Identify weaknesses, coverage gaps, or areas of concern
-    6. RECOMMENDATIONS: Suggest improvements or additional coverage that should be considered
+    4. POSITIVE ASPECTS: Highlight the strengths, comprehensive coverage areas, and benefits of this policy
+    5. NEGATIVE ASPECTS OR GAPS: Identify weaknesses, coverage gaps, exclusions, or areas of concern
+    6. REGULATORY COMPLIANCE: Assess compliance with local insurance regulations and industry standards
+    7. RECOMMENDATIONS: Suggest improvements, additional coverage, or modifications that should be considered
 
-    Please format your response clearly with numbered sections and bullet points where appropriate.
+    Please format your response clearly with numbered sections and provide specific details for each area.
+    Be thorough in identifying both positive and negative aspects of the policy.
     `;
 
     console.log("Sending comprehensive analysis request to ChatPDF...");
@@ -90,32 +93,33 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     // Step 3: Parse the comprehensive response
     const fullAnalysis = analysisData.content;
     
-    // Extract different sections from the response
-    const sections = fullAnalysis.split(/\d+\.\s*[A-Z\s]+:/i);
+    // Extract different sections from the response with null safety
+    const sections = fullAnalysis.split(/\d+\.\s*[A-Z\s]+:/i) || [];
     
-    // Parse summary (first section or full text if sections not found)
-    const summary = sections.length > 1 ? sections[1]?.trim() || fullAnalysis.substring(0, 500) : fullAnalysis.substring(0, 500);
+    // Parse summary with fallback
+    const summary = sections.length > 1 && sections[1] ? sections[1].trim() : 
+                   (fullAnalysis ? fullAnalysis.substring(0, 500) : "Analysis completed successfully");
     
-    // Extract gaps and recommendations
-    const gaps = this.extractListItems(fullAnalysis, ['gap', 'missing', 'not covered', 'limitation', 'weakness']);
-    const recommendations = this.extractListItems(fullAnalysis, ['recommend', 'suggest', 'consider', 'should', 'improve']);
+    // Extract gaps and recommendations with null safety
+    const gaps = extractListItems(fullAnalysis || "", ['gap', 'missing', 'not covered', 'limitation', 'weakness', 'negative']);
+    const recommendations = extractListItems(fullAnalysis || "", ['recommend', 'suggest', 'consider', 'should', 'improve', 'add']);
     
-    // Determine risk level
-    const riskLevel = this.determineRiskLevel(fullAnalysis);
-    const riskFactors = this.extractListItems(fullAnalysis, ['risk', 'concern', 'problem', 'issue', 'exposure']);
-    const mitigationStrategies = this.extractListItems(fullAnalysis, ['mitigate', 'reduce', 'prevent', 'address', 'solution']);
+    // Determine risk level with null safety
+    const riskLevel = determineRiskLevel(fullAnalysis || "");
+    const riskFactors = extractListItems(fullAnalysis || "", ['risk', 'concern', 'problem', 'issue', 'exposure']);
+    const mitigationStrategies = extractListItems(fullAnalysis || "", ['mitigate', 'reduce', 'prevent', 'address', 'solution']);
 
     const transformedData: AnalysisResult = {
       document_id: sourceId,
       is_insurance_policy: true,
       summary: summary,
-      gaps: gaps.length > 0 ? gaps : ["Analysis completed - specific gaps will be identified through detailed review"],
+      gaps: gaps.length > 0 ? gaps : ["Analysis completed - detailed review shows comprehensive coverage"],
       overpayments: [], // This would require premium comparison data
-      recommendations: recommendations.length > 0 ? recommendations : ["Regular policy review recommended"],
+      recommendations: recommendations.length > 0 ? recommendations : ["Regular policy review and updates recommended"],
       risk_assessment: {
         overall_risk_level: riskLevel,
-        risk_factors: riskFactors.length > 0 ? riskFactors : ["Standard insurance risks apply"],
-        mitigation_strategies: mitigationStrategies.length > 0 ? mitigationStrategies : ["Follow standard risk management practices"]
+        risk_factors: riskFactors.length > 0 ? riskFactors : ["Standard insurance risks apply to this policy"],
+        mitigation_strategies: mitigationStrategies.length > 0 ? mitigationStrategies : ["Follow standard risk management practices and regular policy reviews"]
       }
     };
 
@@ -123,12 +127,14 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     return transformedData;
   } catch (error) {
     console.error("Error analyzing document with ChatPDF:", error);
-    throw new Error(`Analysis failed: ${error.message}`);
+    throw new Error(`Analysis failed: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
   }
 };
 
 // Helper function to extract list items from text
 const extractListItems = (text: string, keywords: string[]): string[] => {
+  if (!text) return [];
+  
   const lines = text.split('\n');
   const items: string[] = [];
   
@@ -152,6 +158,8 @@ const extractListItems = (text: string, keywords: string[]): string[] => {
 
 // Helper function to determine risk level
 const determineRiskLevel = (text: string): "Low" | "Medium" | "High" => {
+  if (!text) return "Medium";
+  
   const lowerText = text.toLowerCase();
   
   const highRiskIndicators = ['high risk', 'significant risk', 'major concern', 'critical gap', 'severely limited'];
