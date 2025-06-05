@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,11 +56,20 @@ const Index = () => {
     setAnalysisResult(null);
     
     try {
-      console.log("Starting ChatPDF document analysis:", document.name);
+      console.log("Starting comprehensive policy analysis:", document.name);
       
-      // Call the ChatPDF API to analyze the document
+      // Update document status to processing
+      setDocuments(docs => 
+        docs.map(doc => 
+          doc.id === document.id 
+            ? { ...doc, status: "processing" } 
+            : doc
+        )
+      );
+      
+      // Call the ChatPDF API to analyze the document comprehensively
       const result = await uploadDocumentForAnalysis(document);
-      console.log("ChatPDF analysis completed successfully:", result);
+      console.log("Comprehensive analysis completed successfully:", result);
       
       // Ensure we have a valid result with document_id
       if (!result || typeof result !== 'object' || !result.document_id) {
@@ -70,29 +78,39 @@ const Index = () => {
       
       setAnalysisResult(result);
       
+      // Update document status to ready
+      setDocuments(docs => 
+        docs.map(doc => 
+          doc.id === document.id 
+            ? { ...doc, status: "ready" } 
+            : doc
+        )
+      );
+      
       toast({
         title: "Analysis Complete",
-        description: "Your insurance policy has been successfully analyzed using ChatPDF.",
+        description: "Your insurance policy has been comprehensively analyzed including coverage, risk assessment, and regulatory considerations.",
       });
 
       // Set to summary tab
       setActiveResultTab("summary");
     } catch (error) {
-      console.error("Error analyzing document with ChatPDF:", error);
-      toast({
-        title: "Analysis Failed",
-        description: "There was an error analyzing your document with ChatPDF. Please check your internet connection and try again.",
-        variant: "destructive",
-      });
+      console.error("Error analyzing document:", error);
       
       // Update document status to error
       setDocuments(docs => 
         docs.map(doc => 
           doc.id === document.id 
-            ? { ...doc, status: "error", errorMessage: "Failed to analyze document with ChatPDF" } 
+            ? { ...doc, status: "error", errorMessage: error.message || "Analysis failed" } 
             : doc
         )
       );
+      
+      toast({
+        title: "Analysis Failed",
+        description: error.message || "There was an error analyzing your document. Please check your internet connection and try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -100,7 +118,18 @@ const Index = () => {
 
   const handleAnalyzeClick = () => {
     if (documents.length > 0) {
-      analyzeDocument(documents[0]);
+      const firstDoc = documents[0];
+      if (firstDoc.status === "error") {
+        // Reset status and retry
+        setDocuments(docs => 
+          docs.map(doc => 
+            doc.id === firstDoc.id 
+              ? { ...doc, status: "ready", errorMessage: undefined } 
+              : doc
+          )
+        );
+      }
+      analyzeDocument(firstDoc);
     } else {
       toast({
         title: "No Document",
@@ -185,7 +214,7 @@ const Index = () => {
               Insurance Policy Analyzer
             </h1>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Upload your insurance policy document or paste the text to analyze coverage gaps, identify potential overpayments, and compare against industry benchmarks
+              Upload your insurance policy document to analyze coverage, assess risk, identify positive and negative aspects, and ensure regulatory compliance
             </p>
           </div>
 
@@ -219,7 +248,7 @@ const Index = () => {
                               {isAnalyzing ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Analyzing...
+                                  Analyzing Policy...
                                 </>
                               ) : "Analyze Document"}
                             </Button>
@@ -249,20 +278,20 @@ const Index = () => {
                       {!analysisResult && !isAnalyzing && (
                         <div className="text-center py-12">
                           <p className="text-gray-500">
-                            Upload a document or paste text to see analysis results
+                            Upload a document or paste text to see comprehensive analysis results including coverage assessment, risk evaluation, and regulatory compliance
                           </p>
                         </div>
                       )}
                       
                       {isAnalyzing && (
-                        <AnalysisResults analysis={{
-                          document_id: "",
-                          is_insurance_policy: false,
-                          summary: "",
-                          gaps: [],
-                          overpayments: [],
-                          recommendations: []
-                        }} isLoading />
+                        <div className="space-y-4">
+                          <div className="text-center py-8">
+                            <Loader2 className="mx-auto h-8 w-8 animate-spin text-insurance-blue" />
+                            <p className="mt-4 text-gray-600">
+                              Analyzing your insurance policy for coverage, risk assessment, and regulatory compliance...
+                            </p>
+                          </div>
+                        </div>
                       )}
                       
                       {analysisResult && !isAnalyzing && (

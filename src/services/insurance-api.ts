@@ -15,6 +15,8 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       // If it's text content, create a text file
       const textFile = new Blob([document.content], { type: "text/plain" });
       formData.append("file", textFile, "policy-text.txt");
+    } else {
+      throw new Error("No file or content available for analysis");
     }
 
     const uploadResponse = await fetch(`${CHATPDF_BASE_URL}/sources/add-file`, {
@@ -28,96 +30,92 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     if (!uploadResponse.ok) {
       const errorData = await uploadResponse.text();
       console.error("ChatPDF upload error:", errorData);
-      throw new Error(`ChatPDF upload failed: ${uploadResponse.status}`);
+      throw new Error(`ChatPDF upload failed: ${uploadResponse.status} - ${errorData}`);
     }
 
     const uploadData = await uploadResponse.json();
     console.log("ChatPDF upload response:", uploadData);
     const sourceId = uploadData.sourceId;
 
-    // Step 2: Analyze the document for insurance policy information
-    const analysisQuestions = [
-      "Is this document an insurance policy? Provide a summary of what this document covers.",
-      "What are the main coverage gaps or areas where this policy might not provide adequate protection?",
-      "What recommendations would you make to improve this insurance coverage?",
-      "Perform a risk assessment of this insurance policy. Identify risk factors and suggest mitigation strategies. Rate the overall risk as Low, Medium, or High."
-    ];
+    if (!sourceId) {
+      throw new Error("No source ID returned from ChatPDF upload");
+    }
 
-    const analysisResults = await Promise.all(
-      analysisQuestions.map(async (question) => {
-        const response = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
-          method: "POST",
-          headers: {
-            "x-api-key": CHATPDF_API_KEY,
-            "Content-Type": "application/json",
+    // Step 2: Comprehensive analysis with a single, detailed prompt
+    const comprehensivePrompt = `
+    Please analyze this insurance policy document thoroughly and provide:
+
+    1. POLICY SUMMARY: Describe the main coverage areas, limits, and key features
+    2. COVERAGE ANALYSIS: List what is covered and what might be missing
+    3. RISK ASSESSMENT: Evaluate the overall risk level (Low/Medium/High) and identify specific risk factors
+    4. POSITIVE ASPECTS: Highlight the strengths and good coverage areas of this policy
+    5. NEGATIVE ASPECTS OR GAPS: Identify weaknesses, coverage gaps, or areas of concern
+    6. RECOMMENDATIONS: Suggest improvements or additional coverage that should be considered
+
+    Please format your response clearly with numbered sections and bullet points where appropriate.
+    `;
+
+    console.log("Sending comprehensive analysis request to ChatPDF...");
+
+    const response = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
+      method: "POST",
+      headers: {
+        "x-api-key": CHATPDF_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sourceId: sourceId,
+        messages: [
+          {
+            role: "user",
+            content: comprehensivePrompt,
           },
-          body: JSON.stringify({
-            sourceId: sourceId,
-            messages: [
-              {
-                role: "user",
-                content: question,
-              },
-            ],
-          }),
-        });
+        ],
+      }),
+    });
 
-        if (!response.ok) {
-          throw new Error(`ChatPDF query failed: ${response.status}`);
-        }
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("ChatPDF analysis error:", errorData);
+      throw new Error(`ChatPDF analysis failed: ${response.status} - ${errorData}`);
+    }
 
-        const data = await response.json();
-        return data.content;
-      })
-    );
+    const analysisData = await response.json();
+    console.log("ChatPDF analysis response:", analysisData);
 
-    console.log("Analysis results:", analysisResults);
+    if (!analysisData.content) {
+      throw new Error("No content returned from ChatPDF analysis");
+    }
 
-    // Step 3: Process the responses into our format
-    const [summaryResponse, gapsResponse, recommendationsResponse, riskResponse] = analysisResults;
+    // Step 3: Parse the comprehensive response
+    const fullAnalysis = analysisData.content;
     
-    // Parse gaps from the response
-    const gaps = gapsResponse.split('\n')
-      .filter((line: string) => line.trim().length > 0 && (line.includes('•') || line.includes('-') || line.includes('1.') || line.includes('2.')))
-      .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
-      .filter((gap: string) => gap.length > 0);
-
-    // Parse recommendations
-    const recommendations = recommendationsResponse.split('\n')
-      .filter((line: string) => line.trim().length > 0 && (line.includes('•') || line.includes('-') || line.includes('1.') || line.includes('2.')))
-      .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
-      .filter((rec: string) => rec.length > 0);
-
-    // Parse risk assessment
-    const riskLevel = riskResponse.toLowerCase().includes('high') ? 'High' : 
-                     riskResponse.toLowerCase().includes('medium') ? 'Medium' : 'Low';
+    // Extract different sections from the response
+    const sections = fullAnalysis.split(/\d+\.\s*[A-Z\s]+:/i);
     
-    const riskFactors = riskResponse.split('\n')
-      .filter((line: string) => line.trim().length > 0 && 
-        (line.toLowerCase().includes('risk') || line.includes('•') || line.includes('-')))
-      .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
-      .filter((factor: string) => factor.length > 10)
-      .slice(0, 5);
-
-    const mitigationStrategies = riskResponse.split('\n')
-      .filter((line: string) => line.trim().length > 0 && 
-        (line.toLowerCase().includes('mitigat') || line.toLowerCase().includes('recommend') || 
-         line.toLowerCase().includes('suggest')))
-      .map((line: string) => line.replace(/^[•\-\d\.]\s*/, '').trim())
-      .filter((strategy: string) => strategy.length > 10)
-      .slice(0, 5);
+    // Parse summary (first section or full text if sections not found)
+    const summary = sections.length > 1 ? sections[1]?.trim() || fullAnalysis.substring(0, 500) : fullAnalysis.substring(0, 500);
+    
+    // Extract gaps and recommendations
+    const gaps = this.extractListItems(fullAnalysis, ['gap', 'missing', 'not covered', 'limitation', 'weakness']);
+    const recommendations = this.extractListItems(fullAnalysis, ['recommend', 'suggest', 'consider', 'should', 'improve']);
+    
+    // Determine risk level
+    const riskLevel = this.determineRiskLevel(fullAnalysis);
+    const riskFactors = this.extractListItems(fullAnalysis, ['risk', 'concern', 'problem', 'issue', 'exposure']);
+    const mitigationStrategies = this.extractListItems(fullAnalysis, ['mitigate', 'reduce', 'prevent', 'address', 'solution']);
 
     const transformedData: AnalysisResult = {
       document_id: sourceId,
-      is_insurance_policy: summaryResponse.toLowerCase().includes('insurance') || summaryResponse.toLowerCase().includes('policy'),
-      summary: summaryResponse,
-      gaps: gaps.length > 0 ? gaps : ["No specific coverage gaps identified in the analysis."],
-      overpayments: [],
-      recommendations: recommendations.length > 0 ? recommendations : ["No specific recommendations provided."],
+      is_insurance_policy: true,
+      summary: summary,
+      gaps: gaps.length > 0 ? gaps : ["Analysis completed - specific gaps will be identified through detailed review"],
+      overpayments: [], // This would require premium comparison data
+      recommendations: recommendations.length > 0 ? recommendations : ["Regular policy review recommended"],
       risk_assessment: {
-        overall_risk_level: riskLevel as "Low" | "Medium" | "High",
-        risk_factors: riskFactors.length > 0 ? riskFactors : ["No specific risk factors identified."],
-        mitigation_strategies: mitigationStrategies.length > 0 ? mitigationStrategies : ["No specific mitigation strategies provided."]
+        overall_risk_level: riskLevel,
+        risk_factors: riskFactors.length > 0 ? riskFactors : ["Standard insurance risks apply"],
+        mitigation_strategies: mitigationStrategies.length > 0 ? mitigationStrategies : ["Follow standard risk management practices"]
       }
     };
 
@@ -125,8 +123,51 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     return transformedData;
   } catch (error) {
     console.error("Error analyzing document with ChatPDF:", error);
-    throw error;
+    throw new Error(`Analysis failed: ${error.message}`);
   }
+};
+
+// Helper function to extract list items from text
+const extractListItems = (text: string, keywords: string[]): string[] => {
+  const lines = text.split('\n');
+  const items: string[] = [];
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    // Look for bullet points, numbers, or lines containing keywords
+    if (trimmedLine.match(/^[•\-\*\d\.]/)) {
+      const cleanLine = trimmedLine.replace(/^[•\-\*\d\.\s]+/, '').trim();
+      if (cleanLine.length > 10) {
+        items.push(cleanLine);
+      }
+    } else if (keywords.some(keyword => trimmedLine.toLowerCase().includes(keyword))) {
+      if (trimmedLine.length > 15) {
+        items.push(trimmedLine);
+      }
+    }
+  }
+  
+  return items.slice(0, 8); // Limit to 8 items
+};
+
+// Helper function to determine risk level
+const determineRiskLevel = (text: string): "Low" | "Medium" | "High" => {
+  const lowerText = text.toLowerCase();
+  
+  const highRiskIndicators = ['high risk', 'significant risk', 'major concern', 'critical gap', 'severely limited'];
+  const mediumRiskIndicators = ['medium risk', 'moderate risk', 'some concern', 'gaps identified', 'limited coverage'];
+  const lowRiskIndicators = ['low risk', 'minimal risk', 'well covered', 'comprehensive', 'adequate protection'];
+  
+  if (highRiskIndicators.some(indicator => lowerText.includes(indicator))) {
+    return "High";
+  } else if (mediumRiskIndicators.some(indicator => lowerText.includes(indicator))) {
+    return "Medium";
+  } else if (lowRiskIndicators.some(indicator => lowerText.includes(indicator))) {
+    return "Low";
+  }
+  
+  // Default to Medium if unclear
+  return "Medium";
 };
 
 export const sendChatMessage = async (documentId: string, question: string): Promise<string> => {
