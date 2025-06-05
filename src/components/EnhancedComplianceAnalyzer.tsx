@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { uploadDocumentForAnalysis } from "@/services/insurance-api";
 import { PolicyDocument } from "@/lib/chatpdf-types";
@@ -29,14 +28,19 @@ export class EnhancedComplianceAnalyzer {
     console.log("Starting enhanced compliance analysis for:", document instanceof File ? document.name : document.name);
     
     // Step 1: Extract and analyze document content
-    let documentToAnalyze: File;
+    let documentToAnalyze: PolicyDocument;
     
     if (document instanceof File) {
-      documentToAnalyze = document;
-    } else if (document.file) {
-      documentToAnalyze = document.file;
+      // Convert File to PolicyDocument
+      documentToAnalyze = {
+        id: crypto.randomUUID(),
+        name: document.name,
+        type: "file",
+        file: document,
+        status: "ready"
+      };
     } else {
-      throw new Error("No file available for analysis");
+      documentToAnalyze = document;
     }
     
     const documentAnalysis = await uploadDocumentForAnalysis(documentToAnalyze);
