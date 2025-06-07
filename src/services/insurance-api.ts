@@ -112,6 +112,7 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     const analysisResult: AnalysisResult = {
       summary: summary,
       gaps: gaps,
+      overpayments: [], // Add empty array for overpayments as it's required by the interface
       recommendations: recommendations,
       document_id: sourceId,
       is_insurance_policy: true,
