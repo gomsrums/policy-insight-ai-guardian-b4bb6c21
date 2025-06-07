@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -207,33 +208,33 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="container mx-auto py-8 px-4">
+      <main className="container mx-auto py-4 md:py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-insurance-blue-dark mb-2">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-insurance-blue-dark mb-2">
               Insurance Policy Analyzer
             </h1>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto px-4">
               Upload your insurance policy document to analyze coverage, assess risk, identify positive and negative aspects, and ensure regulatory compliance
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="lg:col-span-1 space-y-4 md:space-y-6">
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 md:p-6">
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6">
-                      <TabsTrigger value="file">Upload File</TabsTrigger>
-                      <TabsTrigger value="text">Paste Text</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2 mb-4 md:mb-6">
+                      <TabsTrigger value="file" className="text-xs md:text-sm">Upload File</TabsTrigger>
+                      <TabsTrigger value="text" className="text-xs md:text-sm">Paste Text</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="file" className="space-y-6">
+                    <TabsContent value="file" className="space-y-4 md:space-y-6">
                       <FileUploader onFileAdded={handleFileAdded} />
                       
                       {documents.length > 0 && activeTab === "file" && (
-                        <div className="mt-6">
-                          <h3 className="font-medium mb-3">Uploaded Document</h3>
+                        <div className="mt-4 md:mt-6">
+                          <h3 className="font-medium mb-3 text-sm md:text-base">Uploaded Document</h3>
                           <DocumentPreview 
                             document={documents[0]} 
                             onRemove={handleRemoveDocument} 
@@ -241,7 +242,7 @@ const Index = () => {
                           
                           <div className="mt-4">
                             <Button 
-                              className="w-full bg-insurance-blue hover:bg-insurance-blue-dark"
+                              className="w-full bg-insurance-blue hover:bg-insurance-blue-dark text-sm md:text-base py-2 md:py-3"
                               onClick={handleAnalyzeClick}
                               disabled={isAnalyzing}
                             >
@@ -265,19 +266,19 @@ const Index = () => {
               </Card>
             </div>
             
-            <div className="md:col-span-2">
+            <div className="lg:col-span-2">
               <Card className="h-full">
-                <CardContent className="p-6">
+                <CardContent className="p-4 md:p-6">
                   <Tabs value={activeResultTab} onValueChange={setActiveResultTab}>
-                    <TabsList className="w-full border-b mb-6">
-                      <TabsTrigger value="summary" className="flex-1">Analysis</TabsTrigger>
-                      <TabsTrigger value="chat" className="flex-1">Chat with Document</TabsTrigger>
+                    <TabsList className="w-full border-b mb-4 md:mb-6 flex-wrap h-auto">
+                      <TabsTrigger value="summary" className="flex-1 text-xs md:text-sm py-2">Analysis</TabsTrigger>
+                      <TabsTrigger value="chat" className="flex-1 text-xs md:text-sm py-2">Chat with Document</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="summary">
                       {!analysisResult && !isAnalyzing && (
-                        <div className="text-center py-12">
-                          <p className="text-gray-500">
+                        <div className="text-center py-8 md:py-12">
+                          <p className="text-gray-500 text-sm md:text-base px-4">
                             Upload a document or paste text to see comprehensive analysis results including coverage assessment, risk evaluation, and regulatory compliance
                           </p>
                         </div>
@@ -285,9 +286,9 @@ const Index = () => {
                       
                       {isAnalyzing && (
                         <div className="space-y-4">
-                          <div className="text-center py-8">
-                            <Loader2 className="mx-auto h-8 w-8 animate-spin text-insurance-blue" />
-                            <p className="mt-4 text-gray-600">
+                          <div className="text-center py-6 md:py-8">
+                            <Loader2 className="mx-auto h-6 w-6 md:h-8 md:w-8 animate-spin text-insurance-blue" />
+                            <p className="mt-4 text-gray-600 text-sm md:text-base px-4">
                               Analyzing your insurance policy for coverage, risk assessment, and regulatory compliance...
                             </p>
                           </div>
@@ -299,7 +300,7 @@ const Index = () => {
                       )}
                     </TabsContent>
                     
-                    <TabsContent value="chat" className="h-[calc(100vh-320px)] min-h-[500px]">
+                    <TabsContent value="chat" className="h-[calc(100vh-400px)] md:h-[calc(100vh-320px)] min-h-[400px] md:min-h-[500px]">
                       <ChatInterface 
                         sourceId="demo-source-id"
                         onSendMessage={handleSendMessage}
@@ -314,9 +315,9 @@ const Index = () => {
         </div>
       </main>
       
-      <footer className="mt-12 py-6 border-t bg-white">
+      <footer className="mt-8 md:mt-12 py-4 md:py-6 border-t bg-white">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 text-xs md:text-sm">
             © {new Date().getFullYear()} PolicyCheck. This tool is for informational purposes only.
           </p>
         </div>
