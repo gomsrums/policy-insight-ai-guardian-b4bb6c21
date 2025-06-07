@@ -1,4 +1,3 @@
-
 import { PolicyDocument, AnalysisResult, BusinessProfile, PolicyBenchmark } from "@/lib/chatpdf-types";
 
 const CHATPDF_API_KEY = "sec_t759nqrP5IPLQM9ssZXIx0aHIK0hiv3k";
@@ -94,7 +93,7 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     const fullAnalysis = analysisData.content;
     
     // Extract different sections from the response with null safety
-    const sections = fullAnalysis.split(/\d+\.\s*[A-Z\s]+:/i) || [];
+    const sections = fullAnalysis?.split(/\d+\.\s*[A-Z\s]+:/i) || [];
     
     // Parse summary with fallback
     const summary = sections.length > 1 && sections[1] ? sections[1].trim() : 
@@ -109,26 +108,22 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     const riskFactors = extractListItems(fullAnalysis || "", ['risk', 'concern', 'problem', 'issue', 'exposure']);
     const mitigationStrategies = extractListItems(fullAnalysis || "", ['mitigate', 'reduce', 'prevent', 'address', 'solution']);
 
-    const transformedData: AnalysisResult = {
-      summary: data.summary || "",
-      gaps: Array.isArray(data.gaps) ? data.gaps : 
-            (data.coverage_gaps ? 
-              (Array.isArray(data.coverage_gaps) ? data.coverage_gaps : [data.coverage_gaps]) : 
-              []),
-      overpayments: Array.isArray(data.overpayments) ? data.overpayments : 
-                    (data.potential_overpayments ? 
-                      (Array.isArray(data.potential_overpayments) ? data.potential_overpayments : [data.potential_overpayments]) : 
-                      []),
-      recommendations: Array.isArray(data.recommendations) ? data.recommendations : 
-                       (data.recommended_actions ? 
-                         (Array.isArray(data.recommended_actions) ? data.recommended_actions : [data.recommended_actions]) : 
-                         []),
-      document_id: data.document_id,
-      is_insurance_policy: data.is_insurance_policy
+    // Create the final analysis result
+    const analysisResult: AnalysisResult = {
+      summary: summary,
+      gaps: gaps,
+      recommendations: recommendations,
+      document_id: sourceId,
+      is_insurance_policy: true,
+      risk_assessment: {
+        overall_risk_level: riskLevel,
+        risk_factors: riskFactors,
+        mitigation_strategies: mitigationStrategies
+      }
     };
     
-    console.log("Transformed data for frontend:", transformedData);
-    return transformedData;
+    console.log("Final analysis result:", analysisResult);
+    return analysisResult;
   } catch (error) {
     console.error("Error analyzing document with ChatPDF:", error);
     throw new Error(`Analysis failed: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
