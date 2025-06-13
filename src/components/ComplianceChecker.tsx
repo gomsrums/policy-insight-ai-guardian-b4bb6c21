@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useBrokerAuth } from "@/contexts/BrokerAuthContext";
 import { CheckCircle, XCircle, AlertTriangle, FileText, Shield, Loader2, BarChart3 } from "lucide-react";
+import { PolicyDocument } from "@/lib/chatpdf-types";
 
 interface ComplianceIssue {
   type: 'missing_coverage' | 'non_compliant_clause' | 'ambiguous_term';
@@ -38,7 +40,7 @@ const ComplianceChecker = () => {
   const [policyName, setPolicyName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [complianceReport, setComplianceReport] = useState<ComplianceReport | null>(null);
-  const [uploadedDocument, setUploadedDocument] = useState<any>(null);
+  const [uploadedDocument, setUploadedDocument] = useState<PolicyDocument | null>(null);
   const [batchResults, setBatchResults] = useState<any[]>([]);
   const { broker } = useBrokerAuth();
   const { toast } = useToast();
@@ -57,22 +59,13 @@ const ComplianceChecker = () => {
     "Singapore"
   ];
 
-  const handleDocumentUpload = async (document: any) => {
-    if (!selectedRegion || !policyName) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a region and enter a policy name before uploading.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleDocumentUpload = (document: PolicyDocument) => {
     console.log("Document uploaded:", document);
     setUploadedDocument(document);
     
     toast({
       title: "Document Uploaded",
-      description: "Document uploaded successfully. Click 'Analyze Compliance' to start analysis.",
+      description: `Document "${document.name}" uploaded successfully. Ready for compliance analysis.`,
     });
   };
 
@@ -81,6 +74,15 @@ const ComplianceChecker = () => {
       toast({
         title: "No Document",
         description: "Please upload a document first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedRegion || !policyName) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a region and enter a policy name before analyzing.",
         variant: "destructive",
       });
       return;
@@ -218,8 +220,7 @@ const ComplianceChecker = () => {
               <div className="space-y-2">
                 <Label>Policy Document</Label>
                 <FileUploader 
-                  onDocumentUploaded={handleDocumentUpload}
-                  showTakePhotoOnly={false}
+                  onFileAdded={handleDocumentUpload}
                 />
               </div>
 
@@ -232,11 +233,11 @@ const ComplianceChecker = () => {
                 </Alert>
               )}
 
-              {uploadedDocument && (
+              {uploadedDocument && selectedRegion && policyName && (
                 <div className="flex justify-center">
                   <Button
                     onClick={analyzeCompliance}
-                    disabled={isAnalyzing || !selectedRegion || !policyName}
+                    disabled={isAnalyzing}
                     className="bg-insurance-blue hover:bg-insurance-blue-dark"
                     size="lg"
                   >
