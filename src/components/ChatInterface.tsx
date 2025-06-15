@@ -1,12 +1,12 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import { ChatMessage } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 import { ScrollArea } from "@/components/ui/scroll-area";
-// No longer importing useAuth or useNavigate
+import { saveChatMessage, getChatHistory } from "@/services/history";
 
 interface ChatInterfaceProps {
   sourceId: string | null;
@@ -18,6 +18,13 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
+  // Load chat history on mount if sourceId is available
+  useEffect(() => {
+    if (sourceId) {
+      getChatHistory(sourceId).then(setChatHistory);
+    }
+  }, [sourceId]);
+
   const handleSendMessage = async () => {
     if (!message.trim() || !sourceId) return;
 
@@ -28,8 +35,9 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
       timestamp: new Date(),
     };
 
-    setChatHistory([...chatHistory, userMessage]);
+    setChatHistory((c) => [...c, userMessage]);
     setMessage("");
+    saveChatMessage(sourceId, userMessage);
 
     try {
       const response = await onSendMessage(message);
@@ -39,7 +47,8 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         content: response,
         timestamp: new Date(),
       };
-      setChatHistory(prev => [...prev, assistantMessage]);
+      setChatHistory((prev) => [...prev, assistantMessage]);
+      saveChatMessage(sourceId, assistantMessage);
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: ChatMessage = {
@@ -49,6 +58,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         timestamp: new Date(),
       };
       setChatHistory(prev => [...prev, errorMessage]);
+      saveChatMessage(sourceId, errorMessage);
     }
   };
 
@@ -56,7 +66,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Remove all authentication/redirect logic. Always render chat.
+  // Always render chat.
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-grow mb-4 p-4 border rounded-md bg-gray-50">

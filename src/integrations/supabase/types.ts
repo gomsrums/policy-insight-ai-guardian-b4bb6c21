@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analysis_history: {
+        Row: {
+          created_at: string | null
+          document_id: string
+          id: string
+          risk_level: string | null
+          summary: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_id: string
+          id?: string
+          risk_level?: string | null
+          summary?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          risk_level?: string | null
+          summary?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       broker_companies: {
         Row: {
           company_name: string
@@ -33,6 +60,33 @@ export type Database = {
           id?: string
           password_hash?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_history: {
+        Row: {
+          document_id: string
+          id: string
+          message: string
+          sender: string
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          document_id: string
+          id?: string
+          message: string
+          sender: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          document_id?: string
+          id?: string
+          message?: string
+          sender?: string
+          timestamp?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

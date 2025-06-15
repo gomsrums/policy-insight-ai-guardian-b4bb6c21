@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import BenchmarkComparison from "@/components/BenchmarkComparison";
 import VoiceChatInterface from "@/components/VoiceChatInterface";
 import { PolicyDocument, AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
+import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
@@ -25,7 +26,16 @@ const Index = () => {
   const [benchmark, setBenchmark] = useState<PolicyBenchmark | null>(null);
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
   const [coverageGaps, setCoverageGaps] = useState<string[]>([]);
+  const [analysisHistory, setAnalysisHistory] = useState([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (analysisResult?.document_id) {
+      getAnalysisResultsHistory(analysisResult.document_id).then(setAnalysisHistory);
+    } else {
+      setAnalysisHistory([]);
+    }
+  }, [analysisResult?.document_id]);
 
   const handleFileAdded = (newDocument: PolicyDocument) => {
     setDocuments([...documents, newDocument]);
@@ -78,6 +88,12 @@ const Index = () => {
       }
       
       setAnalysisResult(result);
+      
+      // Save analysis history
+      if (result && result.document_id) {
+        saveAnalysisResultHistory(result);
+        getAnalysisResultsHistory(result.document_id).then(setAnalysisHistory);
+      }
       
       // Update document status to ready
       setDocuments(docs => 
@@ -298,11 +314,28 @@ const Index = () => {
                       {analysisResult && !isAnalyzing && (
                         <AnalysisResults analysis={analysisResult} />
                       )}
+                      
+                      {analysisHistory.length > 0 && (
+                        <div className="my-6">
+                          <h4 className="font-semibold text-md mb-2 text-insurance-blue-dark">Recent Analyses</h4>
+                          <div className="grid gap-3">
+                            {analysisHistory.map((entry: any) => (
+                              <div key={entry.id} className="border rounded p-2 bg-blue-50 flex justify-between items-center">
+                                <span>
+                                  <span className="font-medium">{entry.summary?.slice(0, 40) ?? "No summary"}</span>
+                                </span>
+                                <span className="text-xs text-gray-500 ml-2">{entry.risk_level ? `Risk: ${entry.risk_level}` : ""}</span>
+                                <span className="text-xs text-gray-400 ml-3">{new Date(entry.created_at).toLocaleString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </TabsContent>
                     
                     <TabsContent value="chat" className="h-[calc(100vh-400px)] md:h-[calc(100vh-320px)] min-h-[400px] md:min-h-[500px]">
                       <ChatInterface 
-                        sourceId="demo-source-id"
+                        sourceId={analysisResult?.document_id ?? null}
                         onSendMessage={handleSendMessage}
                         isLoading={isChatting}
                       />
