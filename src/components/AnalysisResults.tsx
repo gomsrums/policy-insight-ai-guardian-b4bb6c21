@@ -1,4 +1,3 @@
-
 import { AnalysisResult } from "@/lib/chatpdf-types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -108,7 +107,9 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
       <Card>
         <CardHeader>
           <CardTitle className="text-lg md:text-xl">Policy Summary</CardTitle>
-          <CardDescription className="text-sm md:text-base">Key features and coverage details of your policy</CardDescription>
+          <CardDescription className="text-sm md:text-base">
+            Key features and coverage details of your policy
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ul className="list-disc list-inside space-y-2 text-gray-700">
@@ -155,143 +156,70 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <Card className="border-red-200">
-          <CardHeader className="bg-red-50 border-b border-red-200">
-            <CardTitle className="text-red-700 text-lg md:text-xl">Coverage Gaps & What's NOT Covered</CardTitle>
-            <CardDescription className="text-sm md:text-base">Missing coverages, exclusions, and insufficient limits in your policy</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4 md:pt-6">
-            <div className="space-y-4">
-              {/* Missing Coverages */}
-              <div>
-                <h5 className="font-bold text-red-700 mb-2 text-sm md:text-base flex items-center gap-2">
-                  🚫 Missing Coverage Areas
-                </h5>
-                <ul className="space-y-2">
-                  {commonGaps.slice(0, 4).map((gap, index) => (
-                    <li key={index} className="flex gap-2">
-                      <span className="text-red-500 font-bold text-sm md:text-base">❌</span>
-                      <span className="text-gray-700 text-sm md:text-base">{gap}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Critical Exclusions */}
-              <div>
-                <h5 className="font-bold text-orange-600 mb-2 text-sm md:text-base flex items-center gap-2">
-                  ⚠️ Policy Exclusions
-                </h5>
-                <ul className="space-y-2">
-                  {criticalExclusions.slice(0, 3).map((exclusion, index) => (
-                    <li key={index} className="flex gap-2">
-                      <span className="text-orange-500 font-bold text-sm md:text-base">🔴</span>
-                      <span className="text-gray-700 text-sm md:text-base">{exclusion}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Insufficient Limits */}
-              <div>
-                <h5 className="font-bold text-yellow-600 mb-2 text-sm md:text-base flex items-center gap-2">
-                  📊 Insufficient Coverage Limits
-                </h5>
-                <ul className="space-y-2">
-                  {insufficientLimits.slice(0, 2).map((limit, index) => (
-                    <li key={index} className="flex gap-2">
-                      <span className="text-yellow-500 font-bold text-sm md:text-base">⚡</span>
-                      <span className="text-gray-700 text-sm md:text-base">{limit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Additional gaps from analysis if available */}
-              {analysis.gaps && analysis.gaps.length > 0 && (
+      <Card className="border-green-200">
+        <CardHeader className="bg-green-50 border-b border-green-200">
+          <CardTitle className="text-green-700 text-lg md:text-xl">
+            Smart Recommendations
+          </CardTitle>
+          <CardDescription className="text-sm md:text-base">
+            Tailored suggestions to address your policy
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4 md:pt-6">
+          <div className="space-y-3">
+            {/* Coverage Enhancement Recommendations */}
+            <div className="bg-green-50 p-3 rounded-lg">
+              <div className="flex gap-2">
+                <span className="text-green-500 font-bold text-sm md:text-base">💡</span>
                 <div>
-                  <h5 className="font-bold text-purple-600 mb-2 text-sm md:text-base flex items-center gap-2">
-                    🔍 Document Analysis Gaps
-                  </h5>
-                  <ul className="space-y-2">
-                    {analysis.gaps.slice(0, 3).map((gap, index) => (
-                      <li key={index} className="flex gap-2">
-                        <span className="text-purple-500 font-bold text-sm md:text-base">🔎</span>
-                        <span className="text-gray-700 text-sm md:text-base">{gap.replace(/[*#-]/g, '').trim()}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-gray-700 font-medium text-sm md:text-base">Add Cyber Liability Coverage</p>
+                  <p className="text-xs md:text-sm text-green-600 mt-1">
+                    Essential for businesses handling customer data. Covers data breaches, cyber attacks, and regulatory fines.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200">
-          <CardHeader className="bg-green-50 border-b border-green-200">
-            <CardTitle className="text-green-700 text-lg md:text-xl">Smart Recommendations</CardTitle>
-            <CardDescription className="text-sm md:text-base">Tailored suggestions to address coverage gaps</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4 md:pt-6">
-            <div className="space-y-3">
-              {/* Coverage Enhancement Recommendations */}
-              <div className="bg-green-50 p-3 rounded-lg">
-                <div className="flex gap-2">
-                  <span className="text-green-500 font-bold text-sm md:text-base">💡</span>
-                  <div>
-                    <p className="text-gray-700 font-medium text-sm md:text-base">Add Cyber Liability Coverage</p>
-                    <p className="text-xs md:text-sm text-green-600 mt-1">
-                      Essential for businesses handling customer data. Covers data breaches, cyber attacks, and regulatory fines.
-                    </p>
-                  </div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <div className="flex gap-2">
+                <span className="text-green-500 font-bold text-sm md:text-base">💡</span>
+                <div>
+                  <p className="text-gray-700 font-medium text-sm md:text-base">Consider Business Owners Policy (BOP)</p>
+                  <p className="text-xs md:text-sm text-green-600 mt-1">
+                    Combines general liability and property insurance for comprehensive small business protection.
+                  </p>
                 </div>
               </div>
-
-              <div className="bg-green-50 p-3 rounded-lg">
-                <div className="flex gap-2">
-                  <span className="text-green-500 font-bold text-sm md:text-base">💡</span>
-                  <div>
-                    <p className="text-gray-700 font-medium text-sm md:text-base">Consider Business Owners Policy (BOP)</p>
-                    <p className="text-xs md:text-sm text-green-600 mt-1">
-                      Combines general liability and property insurance for comprehensive small business protection.
-                    </p>
-                  </div>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <div className="flex gap-2">
+                <span className="text-green-500 font-bold text-sm md:text-base">💡</span>
+                <div>
+                  <p className="text-gray-700 font-medium text-sm md:text-base">Review Coverage Limits Annually</p>
+                  <p className="text-xs md:text-sm text-green-600 mt-1">
+                    Ensure property values and liability limits keep pace with business growth and inflation.
+                  </p>
                 </div>
               </div>
-
-              <div className="bg-green-50 p-3 rounded-lg">
-                <div className="flex gap-2">
-                  <span className="text-green-500 font-bold text-sm md:text-base">💡</span>
-                  <div>
-                    <p className="text-gray-700 font-medium text-sm md:text-base">Review Coverage Limits Annually</p>
-                    <p className="text-xs md:text-sm text-green-600 mt-1">
-                      Ensure property values and liability limits keep pace with business growth and inflation.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Original recommendations from analysis */}
-              {analysis.recommendations && analysis.recommendations.length > 0 && 
-                analysis.recommendations.slice(0, 2).map((rec, index) => (
-                  <div key={index} className="bg-blue-50 p-3 rounded-lg">
-                    <div className="flex gap-2">
-                      <span className="text-blue-500 font-bold text-sm md:text-base">📋</span>
-                      <div>
-                        <p className="text-gray-700 font-medium text-sm md:text-base">{rec.replace(/[*#-]/g, '').trim()}</p>
-                        <p className="text-xs md:text-sm text-blue-600 mt-1">
-                          From document analysis: Review with your insurance broker for implementation.
-                        </p>
-                      </div>
+            </div>
+            {/* Original recommendations from analysis */}
+            {analysis.recommendations && analysis.recommendations.length > 0 &&
+              analysis.recommendations.slice(0, 2).map((rec, index) => (
+                <div key={index} className="bg-blue-50 p-3 rounded-lg">
+                  <div className="flex gap-2">
+                    <span className="text-blue-500 font-bold text-sm md:text-base">📋</span>
+                    <div>
+                      <p className="text-gray-700 font-medium text-sm md:text-base">{rec.replace(/[*#-]/g, '').trim()}</p>
+                      <p className="text-xs md:text-sm text-blue-600 mt-1">
+                        From document analysis: Review with your insurance broker for implementation.
+                      </p>
                     </div>
                   </div>
-                ))
-              }
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              ))
+            }
+          </div>
+        </CardContent>
+      </Card>
 
       <Alert>
         <AlertTitle className="text-sm md:text-base font-bold">Important Disclaimer</AlertTitle>

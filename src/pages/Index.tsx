@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import DocumentPreview from "@/components/DocumentPreview";
 import AnalysisResults from "@/components/AnalysisResults";
 import ChatInterface from "@/components/ChatInterface";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
+import VoiceChatInterface from "@/components/VoiceChatInterface";
 import { PolicyDocument, AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 
@@ -273,6 +273,7 @@ const Index = () => {
                     <TabsList className="w-full border-b mb-4 md:mb-6 flex-wrap h-auto">
                       <TabsTrigger value="summary" className="flex-1 text-xs md:text-sm py-2">Analysis</TabsTrigger>
                       <TabsTrigger value="chat" className="flex-1 text-xs md:text-sm py-2">Chat with Document</TabsTrigger>
+                      <TabsTrigger value="realtime" className="flex-1 text-xs md:text-sm py-2">Realtime Chat</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="summary">
@@ -306,6 +307,10 @@ const Index = () => {
                         onSendMessage={handleSendMessage}
                         isLoading={isChatting}
                       />
+                    </TabsContent>
+
+                    <TabsContent value="realtime">
+                      <VoiceChatInterface />
                     </TabsContent>
                   </Tabs>
                 </CardContent>
