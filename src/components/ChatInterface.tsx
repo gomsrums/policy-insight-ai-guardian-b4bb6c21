@@ -6,8 +6,7 @@ import { Send } from "lucide-react";
 import { ChatMessage } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+// No longer importing useAuth or useNavigate
 
 interface ChatInterfaceProps {
   sourceId: string | null;
@@ -18,15 +17,8 @@ interface ChatInterfaceProps {
 const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProps) => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const { isAuthenticated, loading } = useAuth();
-  const navigate = useNavigate();
 
   const handleSendMessage = async () => {
-    if (!isAuthenticated) {
-      navigate("/auth");
-      return;
-    }
-
     if (!message.trim() || !sourceId) return;
 
     const userMessage: ChatMessage = {
@@ -41,25 +33,21 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
 
     try {
       const response = await onSendMessage(message);
-      
       const assistantMessage: ChatMessage = {
         id: nanoid(),
         role: "assistant",
         content: response,
         timestamp: new Date(),
       };
-
       setChatHistory(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
-      
       const errorMessage: ChatMessage = {
         id: nanoid(),
         role: "assistant",
         content: "Sorry, I encountered an error while processing your request.",
         timestamp: new Date(),
       };
-
       setChatHistory(prev => [...prev, errorMessage]);
     }
   };
@@ -68,30 +56,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full space-y-4">
-        <p className="text-gray-500 text-center">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full space-y-4">
-        <p className="text-gray-500 text-center">
-          Please sign in to chat with your document
-        </p>
-        <Button
-          onClick={() => navigate("/auth")}
-          className="bg-insurance-blue hover:bg-insurance-blue-dark"
-        >
-          Sign In to Chat
-        </Button>
-      </div>
-    );
-  }
-
+  // Remove all authentication/redirect logic. Always render chat.
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-grow mb-4 p-4 border rounded-md bg-gray-50">
@@ -129,7 +94,6 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
           </div>
         )}
       </ScrollArea>
-
       <div className="flex gap-2">
         <Textarea
           placeholder="Ask a question about your policy..."

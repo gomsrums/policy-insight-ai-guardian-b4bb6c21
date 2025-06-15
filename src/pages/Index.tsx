@@ -273,7 +273,6 @@ const Index = () => {
                     <TabsList className="w-full border-b mb-4 md:mb-6 flex-wrap h-auto">
                       <TabsTrigger value="summary" className="flex-1 text-xs md:text-sm py-2">Analysis</TabsTrigger>
                       <TabsTrigger value="chat" className="flex-1 text-xs md:text-sm py-2">Chat with Document</TabsTrigger>
-                      <TabsTrigger value="realtime" className="flex-1 text-xs md:text-sm py-2">Realtime Chat</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="summary">
@@ -307,10 +306,6 @@ const Index = () => {
                         onSendMessage={handleSendMessage}
                         isLoading={isChatting}
                       />
-                    </TabsContent>
-
-                    <TabsContent value="realtime">
-                      <VoiceChatInterface />
                     </TabsContent>
                   </Tabs>
                 </CardContent>
