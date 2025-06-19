@@ -9,7 +9,6 @@ import { Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import LoginDialog from "@/components/LoginDialog";
 import FileUploader from "@/components/FileUploader";
 import { uploadDocumentForAnalysis } from "@/services/insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
@@ -163,11 +162,6 @@ startxref
   };
 
   const handleCompare = async () => {
-    if (!isAuthenticated) {
-      setShowLoginDialog(true);
-      return;
-    }
-
     let document1: PolicyDocument;
     let document2: PolicyDocument;
 
@@ -281,22 +275,6 @@ startxref
               Compare two insurance policy quotations side-by-side using ChatPDF AI analysis
             </p>
           </div>
-
-          {!isAuthenticated && (
-            <div className="mb-8 p-6 border border-yellow-200 bg-yellow-50 rounded-lg">
-              <div className="text-center space-y-4">
-                <p className="text-yellow-800">
-                  Please log in to access the policy comparison feature
-                </p>
-                <Button
-                  onClick={() => setShowLoginDialog(true)}
-                  className="bg-insurance-blue hover:bg-insurance-blue-dark"
-                >
-                  Login to Compare
-                </Button>
-              </div>
-            </div>
-          )}
 
           <Card className="mb-8">
             <CardHeader>
@@ -502,11 +480,6 @@ startxref
           )}
         </div>
       </main>
-      
-      <LoginDialog
-        isOpen={showLoginDialog}
-        onClose={() => setShowLoginDialog(false)}
-      />
     </div>
   );
 };
