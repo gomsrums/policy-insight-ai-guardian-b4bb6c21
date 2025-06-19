@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,7 +36,6 @@ const Comparison = () => {
     policy1: ComparisonResult;
     policy2: ComparisonResult;
   } | null>(null);
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
@@ -323,7 +321,7 @@ startxref
                           value={quotation1}
                           onChange={(e) => setQuotation1(e.target.value)}
                           className="min-h-[200px]"
-                          disabled={!isAuthenticated || isAnalyzing}
+                          disabled={isAnalyzing}
                         />
                       </CardContent>
                     </Card>
@@ -338,7 +336,7 @@ startxref
                           value={quotation2}
                           onChange={(e) => setQuotation2(e.target.value)}
                           className="min-h-[200px]"
-                          disabled={!isAuthenticated || isAnalyzing}
+                          disabled={isAnalyzing}
                         />
                       </CardContent>
                     </Card>
@@ -387,7 +385,7 @@ startxref
           <div className="text-center mb-8">
             <Button 
               onClick={handleCompare}
-              disabled={isAnalyzing || !isAuthenticated || 
+              disabled={isAnalyzing || 
                 (activeTab === "text" && (!quotation1.trim() || !quotation2.trim())) ||
                 (activeTab === "upload" && (!policy1Document || !policy2Document))
               }
@@ -498,10 +496,7 @@ startxref
           {!comparisonResults && !isAnalyzing && (
             <div className="text-center py-12">
               <p className="text-gray-500">
-                {isAuthenticated 
-                  ? "Upload your insurance policy documents or paste policy text above and click \"Compare Policies\" to see detailed analysis results using ChatPDF"
-                  : "Please log in to compare insurance policies"
-                }
+                Upload your insurance policy documents or paste policy text above and click "Compare Policies" to see detailed analysis results using ChatPDF
               </p>
             </div>
           )}

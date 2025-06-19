@@ -54,9 +54,9 @@ const EmailSubscription = () => {
         <Button
           variant="outline"
           size="sm"
-          className="fixed bottom-4 right-4 bg-insurance-blue text-white hover:bg-insurance-blue-dark border-insurance-blue z-50 shadow-lg"
+          className="border-insurance-blue text-insurance-blue hover:bg-insurance-blue hover:text-white text-xs"
         >
-          <Mail className="h-4 w-4 mr-2" />
+          <Mail className="h-3 w-3 mr-1" />
           Subscribe
         </Button>
       </DialogTrigger>

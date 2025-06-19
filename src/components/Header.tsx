@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, User, Loader2 } from "lucide-react";
+import EmailSubscription from "@/components/EmailSubscription";
 
 const Header = () => {
   const { user, profile, signOut, isAuthenticated, loading } = useAuth();
@@ -52,13 +53,16 @@ const Header = () => {
               </Button>
             </div>
           ) : (
-            <Button
-              asChild
-              variant="outline"
-              className="border-insurance-blue text-insurance-blue hover:bg-insurance-blue hover:text-white"
-            >
-              <Link to="/auth">Sign In</Link>
-            </Button>
+            <div className="flex flex-col items-center gap-2">
+              <Button
+                asChild
+                variant="outline"
+                className="border-insurance-blue text-insurance-blue hover:bg-insurance-blue hover:text-white"
+              >
+                <Link to="/auth">Sign In</Link>
+              </Button>
+              <EmailSubscription />
+            </div>
           )}
         </nav>
       </div>
