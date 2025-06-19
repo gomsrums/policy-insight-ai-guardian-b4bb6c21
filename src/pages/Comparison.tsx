@@ -113,7 +113,7 @@ startxref
 
   const analyzeWithChatPDF = async (document: PolicyDocument, policyName: string): Promise<ComparisonResult> => {
     try {
-      // Analyze with ChatPDF
+      // Analyze with AI
       const analysis: AnalysisResult = await uploadDocumentForAnalysis(document);
       
       // Extract specific information from the analysis
@@ -148,7 +148,7 @@ startxref
         missingCoverages
       };
     } catch (error) {
-      console.error(`Error analyzing ${policyName} with ChatPDF:`, error);
+      console.error(`Error analyzing ${policyName} with AI:`, error);
       throw error;
     }
   };
@@ -213,10 +213,10 @@ startxref
     try {
       toast({
         title: "Analyzing Policies",
-        description: "Converting and analyzing your policies with ChatPDF...",
+        description: "Converting and analyzing your policies with AI...",
       });
 
-      // Analyze both policies with ChatPDF
+      // Analyze both policies with AI
       const [policy1Analysis, policy2Analysis] = await Promise.all([
         analyzeWithChatPDF(document1, "Policy A"),
         analyzeWithChatPDF(document2, "Policy B")
@@ -229,13 +229,13 @@ startxref
 
       toast({
         title: "Comparison Complete",
-        description: "Your insurance policies have been analyzed and compared using ChatPDF.",
+        description: "Your insurance policies have been analyzed and compared using AI.",
       });
     } catch (error) {
       console.error("Error analyzing policies:", error);
       toast({
         title: "Analysis Failed", 
-        description: "There was an error analyzing your policies with ChatPDF. Please try again.",
+        description: "There was an error analyzing your policies with AI. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -272,7 +272,7 @@ startxref
               Policy Comparison
             </h1>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Compare two insurance policy quotations side-by-side using ChatPDF AI analysis
+              Compare two insurance policy quotations side-by-side using AI analysis
             </p>
           </div>
 
@@ -372,7 +372,7 @@ startxref
               {isAnalyzing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing with ChatPDF...
+                  Analyzing with AI...
                 </>
               ) : "Compare Your Policies"}
             </Button>
@@ -382,7 +382,7 @@ startxref
             <div className="space-y-8">
               <Card>
                 <CardHeader>
-                  <CardTitle>ChatPDF Analysis Results</CardTitle>
+                  <CardTitle>AI Analysis Results</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -474,7 +474,7 @@ startxref
           {!comparisonResults && !isAnalyzing && (
             <div className="text-center py-12">
               <p className="text-gray-500">
-                Upload your insurance policy documents or paste policy text above and click "Compare Policies" to see detailed analysis results using ChatPDF
+                Upload your insurance policy documents or paste policy text above and click "Compare Policies" to see detailed analysis results using AI
               </p>
             </div>
           )}
