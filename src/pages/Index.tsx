@@ -12,6 +12,7 @@ import AnalysisResults from "@/components/AnalysisResults";
 import ChatInterface from "@/components/ChatInterface";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
 import VoiceChatInterface from "@/components/VoiceChatInterface";
+import EmailSubscription from "@/components/EmailSubscription";
 import { PolicyDocument, AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
@@ -355,6 +356,8 @@ const Index = () => {
           </p>
         </div>
       </footer>
+      
+      <EmailSubscription />
     </div>
   );
 };
