@@ -374,7 +374,7 @@ startxref
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Analyzing with ChatPDF...
                 </>
-              ) : "Compare Policies with ChatPDF"}
+              ) : "Compare Your Policies"}
             </Button>
           </div>
 
