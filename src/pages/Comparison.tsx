@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import FileUploader from "@/components/FileUploader";
-import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/hybrid-insurance-api";
+import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 
