@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,9 +14,8 @@ import ChatInterface from "@/components/ChatInterface";
 import BenchmarkComparison from "@/components/BenchmarkComparison";
 import VoiceChatInterface from "@/components/VoiceChatInterface";
 import { PolicyDocument, AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
-import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/hybrid-insurance-api";
+import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
-import { processKnowledgeBase } from "@/services/knowledge-base";
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
@@ -28,25 +28,7 @@ const Index = () => {
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
   const [coverageGaps, setCoverageGaps] = useState<string[]>([]);
   const [analysisHistory, setAnalysisHistory] = useState([]);
-  const [isInitializing, setIsInitializing] = useState(true);
   const { toast } = useToast();
-
-  // Initialize knowledge base on first load
-  useEffect(() => {
-    const initializeKnowledgeBase = async () => {
-      try {
-        console.log('Initializing insurance knowledge base...');
-        await processKnowledgeBase();
-        console.log('Knowledge base initialized successfully');
-      } catch (error) {
-        console.error('Error initializing knowledge base:', error);
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-    
-    initializeKnowledgeBase();
-  }, []);
 
   useEffect(() => {
     if (analysisResult?.document_id) {
@@ -86,7 +68,7 @@ const Index = () => {
     setAnalysisResult(null);
     
     try {
-      console.log("Starting comprehensive policy analysis with hybrid approach:", document.name);
+      console.log("Starting comprehensive policy analysis with ChatPDF:", document.name);
       
       // Update document status to processing
       setDocuments(docs => 
@@ -97,13 +79,13 @@ const Index = () => {
         )
       );
       
-      // Call the hybrid insurance API to analyze the document
+      // Call the ChatPDF API to analyze the document
       const result = await uploadDocumentForAnalysis(document);
-      console.log("Hybrid analysis completed successfully:", result);
+      console.log("ChatPDF analysis completed successfully:", result);
       
       // Ensure we have a valid result with document_id
       if (!result || typeof result !== 'object' || !result.document_id) {
-        throw new Error("Invalid analysis result returned from hybrid analysis API");
+        throw new Error("Invalid analysis result returned from ChatPDF API");
       }
       
       setAnalysisResult(result);
@@ -125,7 +107,7 @@ const Index = () => {
       
       toast({
         title: "Analysis Complete",
-        description: "Your insurance policy has been comprehensively analyzed using our hybrid AI system with insurance knowledge base.",
+        description: "Your insurance policy has been comprehensively analyzed using ChatPDF.",
       });
 
       // Set to summary tab
@@ -185,7 +167,7 @@ const Index = () => {
       // Get the current document ID
       const documentId = analysisResult.document_id;
       
-      // Fetch coverage gaps from the hybrid API
+      // Fetch coverage gaps from ChatPDF
       const response = await getCoverageGaps(documentId);
       
       // Parse the response into an array
@@ -204,7 +186,7 @@ const Index = () => {
       
       toast({
         title: "Coverage Gaps Analysis Complete",
-        description: "Your policy has been analyzed for potential coverage gaps using our hybrid AI system.",
+        description: "Your policy has been analyzed for potential coverage gaps using ChatPDF.",
       });
     } catch (error) {
       console.error("Error fetching coverage gaps:", error);
@@ -228,7 +210,7 @@ const Index = () => {
         return "Please upload and analyze a document first before asking questions.";
       }
       
-      // Send the chat message to the hybrid API
+      // Send the chat message to ChatPDF
       const response = await sendChatMessage(documentId, message);
       return response;
     } catch (error) {
@@ -238,17 +220,6 @@ const Index = () => {
       setIsChatting(false);
     }
   };
-
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-insurance-blue mb-4" />
-          <p className="text-gray-600">Initializing insurance knowledge base...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -261,7 +232,7 @@ const Index = () => {
               Insurance Policy Analyzer
             </h1>
             <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto px-4">
-              Upload your insurance policy document to analyze coverage, assess risk, identify positive and negative aspects, and ensure regulatory compliance using our hybrid AI system with insurance knowledge base
+              Upload your insurance policy document to analyze coverage, assess risk, identify positive and negative aspects, and ensure regulatory compliance using ChatPDF
             </p>
           </div>
 
@@ -325,7 +296,7 @@ const Index = () => {
                       {!analysisResult && !isAnalyzing && (
                         <div className="text-center py-8 md:py-12">
                           <p className="text-gray-500 text-sm md:text-base px-4">
-                            Upload a document or paste text to see comprehensive analysis results including coverage assessment, risk evaluation, and regulatory compliance using our hybrid AI system with insurance knowledge base
+                            Upload a document or paste text to see comprehensive analysis results including coverage assessment, risk evaluation, and regulatory compliance using ChatPDF
                           </p>
                         </div>
                       )}
@@ -335,7 +306,7 @@ const Index = () => {
                           <div className="text-center py-6 md:py-8">
                             <Loader2 className="mx-auto h-6 w-6 md:h-8 md:w-8 animate-spin text-insurance-blue" />
                             <p className="mt-4 text-gray-600 text-sm md:text-base px-4">
-                              Analyzing your insurance policy using our hybrid AI system with insurance knowledge base for coverage, risk assessment, and regulatory compliance...
+                              Analyzing your insurance policy using ChatPDF for coverage, risk assessment, and regulatory compliance...
                             </p>
                           </div>
                         </div>
