@@ -65,7 +65,7 @@ export const processKnowledgeBase = async (): Promise<void> => {
         knowledge_base_id: entry.id,
         chunk_text: result.text,
         chunk_index: index,
-        embedding: result.embedding,
+        embedding: `[${result.embedding.join(',')}]`, // Convert array to string format
         metadata: { 
           title: entry.title,
           category: entry.category,
@@ -107,7 +107,7 @@ export const searchKnowledgeBase = async (
     
     // Search in knowledge base chunks
     const { data, error } = await supabase.rpc('search_knowledge_base', {
-      query_embedding: queryEmbedding.embedding,
+      query_embedding: `[${queryEmbedding.embedding.join(',')}]`,
       match_threshold: 0.7,
       match_count: 10,
       category_filter: filters?.category,

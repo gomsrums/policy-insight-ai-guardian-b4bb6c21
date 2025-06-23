@@ -33,7 +33,7 @@ export const storeDocumentChunks = async (
       document_id: documentId,
       chunk_text: result.text,
       chunk_index: index,
-      embedding: result.embedding,
+      embedding: `[${result.embedding.join(',')}]`, // Convert array to string format
       metadata: { document_id: documentId, chunk_size: result.text.length }
     }));
     
@@ -60,7 +60,7 @@ export const findSimilarChunks = async (
     
     // Search for similar chunks using vector similarity
     const { data, error } = await supabase.rpc('search_similar_chunks', {
-      query_embedding: queryEmbedding.embedding,
+      query_embedding: `[${queryEmbedding.embedding.join(',')}]`,
       match_threshold: 0.7,
       match_count: limit
     });
