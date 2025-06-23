@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import FileUploader from "@/components/FileUploader";
-import { uploadDocumentForAnalysis } from "@/services/insurance-api";
+import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/hybrid-insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 
@@ -113,7 +113,7 @@ startxref
 
   const analyzeWithChatPDF = async (document: PolicyDocument, policyName: string): Promise<ComparisonResult> => {
     try {
-      // Analyze with AI
+      // Analyze with hybrid AI system
       const analysis: AnalysisResult = await uploadDocumentForAnalysis(document);
       
       // Extract specific information from the analysis
