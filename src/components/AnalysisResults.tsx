@@ -1,10 +1,9 @@
-
 import { AnalysisResult } from "@/lib/chatpdf-types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CoverageGapAnalyzer from "./CoverageGapAnalyzer";
+import EnhancedCoverageGapAnalyzer from "./EnhancedCoverageGapAnalyzer";
 
 interface AnalysisResultsProps {
   analysis: AnalysisResult;
@@ -53,7 +52,7 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
       <Tabs defaultValue="summary" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="summary">Policy Summary</TabsTrigger>
-          <TabsTrigger value="coverage-gaps">Coverage Gaps</TabsTrigger>
+          <TabsTrigger value="coverage-gaps">Coverage Gap Analysis</TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
 
@@ -112,7 +111,7 @@ const AnalysisResults = ({ analysis, isLoading = false }: AnalysisResultsProps) 
         </TabsContent>
 
         <TabsContent value="coverage-gaps">
-          <CoverageGapAnalyzer analysis={analysis} />
+          <EnhancedCoverageGapAnalyzer analysis={analysis} />
         </TabsContent>
 
         <TabsContent value="recommendations" className="space-y-6">
