@@ -7,37 +7,41 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { Download, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Download, AlertTriangle, CheckCircle, XCircle, Globe } from 'lucide-react';
 import { AnalysisResult } from "@/lib/chatpdf-types";
 import { analyzePolicy, GapAnalysisResult, CoverageGap } from "@/services/advanced-coverage-analyzer";
 
 interface EnhancedCoverageGapAnalyzerProps {
   analysis: AnalysisResult;
   policyType?: string;
+  region?: string;
 }
 
 const EnhancedCoverageGapAnalyzer = ({ 
   analysis, 
-  policyType = "general" 
+  policyType = "general",
+  region = "UK"
 }: EnhancedCoverageGapAnalyzerProps) => {
   const [gapAnalysis, setGapAnalysis] = useState<GapAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState(region);
 
   useEffect(() => {
     if (analysis?.summary) {
       performGapAnalysis();
     }
-  }, [analysis]);
+  }, [analysis, selectedRegion]);
 
   const performGapAnalysis = async () => {
     setIsAnalyzing(true);
     setError(null);
     
     try {
-      console.log('Starting enhanced coverage gap analysis...');
-      const result = await analyzePolicy(analysis.summary, policyType);
+      console.log(`Starting enhanced coverage gap analysis for ${selectedRegion}...`);
+      const result = await analyzePolicy(analysis.summary, policyType, selectedRegion);
       setGapAnalysis(result);
     } catch (err) {
       console.error('Enhanced gap analysis failed:', err);
@@ -167,6 +171,32 @@ Generated on: ${new Date().toLocaleDateString()}
 
   return (
     <div className="space-y-6">
+      {/* Region Selector */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Regional Coverage Standards
+          </CardTitle>
+          <CardDescription>
+            Select your region to analyze against local insurance benchmarks
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="Select region" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
+              <SelectItem value="US">🇺🇸 United States</SelectItem>
+              <SelectItem value="INDIA">🇮🇳 India</SelectItem>
+              <SelectItem value="EUROPE">🇪🇺 Europe (General)</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
       {/* Overview Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
