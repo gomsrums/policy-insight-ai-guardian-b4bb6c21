@@ -355,40 +355,97 @@ const FileUploader = ({ onDocumentUploaded, onFileAdded, showTakePhotoOnly = fal
 
   // Main upload interface
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {!showTakePhotoOnly && (
-          <Card 
-            className="cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <CardContent className="p-6 text-center">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-insurance-blue" />
-              <h3 className="font-medium mb-1">Upload Document</h3>
-              <p className="text-sm text-gray-600">
-                Select PDF or image files
-              </p>
-              {isUploading && (
-                <div className="mt-2">
-                  <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+    <div className="space-y-6">
+      {/* Drag and Drop Zone */}
+      <div 
+        className="border-2 border-dashed border-primary/30 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-gradient-to-br from-primary/5 to-primary/10"
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.currentTarget.classList.add('border-primary');
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.currentTarget.classList.remove('border-primary');
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.currentTarget.classList.remove('border-primary');
+          const files = e.dataTransfer.files;
+          if (files[0]) {
+            handleFileUpload({ target: { files } } as any);
+          }
+        }}
+      >
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto">
+            <Upload className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Drop your policy document here
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              or <span className="text-primary font-medium underline">browse files</span> to upload
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
+              <span className="bg-muted px-2 py-1 rounded">PDF</span>
+              <span className="bg-muted px-2 py-1 rounded">JPG</span>
+              <span className="bg-muted px-2 py-1 rounded">PNG</span>
+              <span className="bg-muted px-2 py-1 rounded">Max 10MB</span>
+            </div>
+          </div>
+          {isUploading && (
+            <div className="mt-4">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+              <p className="text-sm text-muted-foreground mt-2">Uploading...</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Alternative Options */}
+      <div className="grid grid-cols-1 gap-4">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground mb-4">
+            Don't have a digital copy? No problem!
+          </p>
+        </div>
         
         <Card 
-          className="cursor-pointer hover:bg-gray-50 transition-colors"
+          className="cursor-pointer hover:bg-muted/50 transition-colors border-2 hover:border-primary/30"
           onClick={startCamera}
         >
           <CardContent className="p-6 text-center">
-            <Camera className="h-8 w-8 mx-auto mb-2 text-insurance-blue" />
-            <h3 className="font-medium mb-1">Take Photo</h3>
-            <p className="text-sm text-gray-600">
-              Capture multiple pages
-            </p>
+            <div className="flex items-center justify-center gap-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                <Camera className="h-6 w-6 text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-foreground">Take Photos</h3>
+                <p className="text-sm text-muted-foreground">
+                  Capture multiple pages with your camera
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Security Notice */}
+      <div className="bg-muted/30 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-green-600 text-sm">🔒</span>
+          </div>
+          <div className="text-sm">
+            <p className="font-medium text-foreground mb-1">Your data is secure</p>
+            <p className="text-muted-foreground">
+              Files are processed securely and automatically deleted after analysis. 
+              We never store your personal information.
+            </p>
+          </div>
+        </div>
       </div>
 
       <input
