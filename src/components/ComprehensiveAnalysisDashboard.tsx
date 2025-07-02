@@ -1,349 +1,290 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Download, Shield, Target, Globe, BarChart3, AlertTriangle, CheckCircle } from 'lucide-react';
+
 import { AnalysisResult } from "@/lib/chatpdf-types";
-import CoverageAnalyzer from './CoverageAnalyzer';
-import GapRecommendationEngine from './GapRecommendationEngine';
-import RegionalComplianceChecker from './RegionalComplianceChecker';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  analyzeGaps, 
+  convertAnalysisToCompanyData,
+  type GapAnalysisResult,
+  type CompanyData 
+} from "@/services/rule-based-gap-analyzer";
+import { useMemo } from "react";
 
 interface ComprehensiveAnalysisDashboardProps {
   analysis: AnalysisResult;
-  userContext?: {
-    location?: string;
-    propertyType?: string;
-    businessType?: string;
-    industry?: string;
+  userContext: {
+    location: string;
+    propertyType: string;
+    businessType: string;
+    industry: string;
   };
 }
 
-interface OverallInsights {
-  coverageScore: number;
-  gapScore: number;
-  complianceScore: number;
-  overallRiskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
-  keyFindings: string[];
-  priorityActions: {
-    action: string;
-    urgency: 'Immediate' | 'Short-term' | 'Long-term';
-    impact: 'High' | 'Medium' | 'Low';
-  }[];
-}
+const ComprehensiveAnalysisDashboard = ({ 
+  analysis, 
+  userContext 
+}: ComprehensiveAnalysisDashboardProps) => {
+  
+  const { companyData, gapAnalysis } = useMemo(() => {
+    const companyData = convertAnalysisToCompanyData(analysis);
+    // Override with user context where available
+    companyData.industry = userContext.industry || companyData.industry;
+    companyData.location = userContext.location || companyData.location;
+    
+    const gapAnalysis = analyzeGaps(companyData);
+    return { companyData, gapAnalysis };
+  }, [analysis, userContext]);
 
-const ComprehensiveAnalysisDashboard = ({ analysis, userContext }: ComprehensiveAnalysisDashboardProps) => {
-  const [activeTab, setActiveTab] = useState('overview');
-
-  // Calculate overall insights
-  const overallInsights: OverallInsights = {
-    coverageScore: 75,
-    gapScore: 68,
-    complianceScore: 82,
-    overallRiskLevel: 'Medium',
-    keyFindings: [
-      'Missing cyber liability coverage poses significant risk',
-      'Professional indemnity limits may be insufficient',
-      'Flood coverage required for your location',
-      'GDPR compliance measures are adequate',
-      'Business interruption coverage is comprehensive'
-    ],
-    priorityActions: [
-      {
-        action: 'Add cyber liability insurance',
-        urgency: 'Immediate',
-        impact: 'High'
-      },
-      {
-        action: 'Increase professional indemnity limits',
-        urgency: 'Short-term',
-        impact: 'Medium'
-      },
-      {
-        action: 'Review flood insurance requirements',
-        urgency: 'Short-term',
-        impact: 'High'
-      },
-      {
-        action: 'Update equipment valuations',
-        urgency: 'Long-term',
-        impact: 'Low'
-      }
-    ]
-  };
-
-  const chartData = [
-    { name: 'Coverage', score: overallInsights.coverageScore, color: '#3B82F6' },
-    { name: 'Gaps', score: overallInsights.gapScore, color: '#EF4444' },
-    { name: 'Compliance', score: overallInsights.complianceScore, color: '#10B981' }
-  ];
-
-  const pieData = [
-    { name: 'Covered', value: 68, color: '#10B981' },
-    { name: 'Gaps', value: 22, color: '#EF4444' },
-    { name: 'Partial', value: 10, color: '#F59E0B' }
-  ];
-
-  const getRiskLevelColor = (level: string) => {
-    switch (level) {
-      case 'Low': return 'text-green-600 bg-green-50 border-green-200';
-      case 'Medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'High': return 'text-orange-600 bg-orange-50 border-orange-200';
-      case 'Critical': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+  const getRiskBadgeVariant = (severity: string) => {
+    switch (severity) {
+      case "Critical": return "destructive";
+      case "High": return "destructive";
+      case "Medium": return "secondary";
+      case "Low": return "default";
+      default: return "outline";
     }
   };
 
-  const getUrgencyBadge = (urgency: string) => {
-    switch (urgency) {
-      case 'Immediate': return <Badge variant="destructive">{urgency}</Badge>;
-      case 'Short-term': return <Badge variant="secondary">{urgency}</Badge>;
-      case 'Long-term': return <Badge variant="outline">{urgency}</Badge>;
-      default: return <Badge variant="outline">{urgency}</Badge>;
+  const formatCurrency = (amount: number): string => {
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(0)}K`;
     }
-  };
-
-  const generateComprehensiveReport = () => {
-    const reportData = {
-      timestamp: new Date().toISOString(),
-      userContext,
-      analysis: overallInsights,
-      // This would include all the detailed data from the three analysis components
-    };
-
-    const reportContent = `
-# Comprehensive Insurance Analysis Report
-
-## Executive Summary
-- Overall Risk Level: ${overallInsights.overallRiskLevel}
-- Coverage Score: ${overallInsights.coverageScore}%
-- Gap Analysis Score: ${overallInsights.gapScore}%
-- Compliance Score: ${overallInsights.complianceScore}%
-
-## Key Findings
-${overallInsights.keyFindings.map(finding => `- ${finding}`).join('\n')}
-
-## Priority Actions
-${overallInsights.priorityActions.map(action => 
-  `- ${action.action} (${action.urgency} - ${action.impact} Impact)`
-).join('\n')}
-
-## Generated on: ${new Date().toLocaleDateString()}
-    `;
-
-    const blob = new Blob([reportContent], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'comprehensive-insurance-analysis.md';
-    a.click();
-    URL.revokeObjectURL(url);
+    return `$${amount}`;
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6" />
-            Comprehensive Insurance Analysis Dashboard
-          </CardTitle>
-          <CardDescription>
-            Complete coverage analysis, gap identification, and compliance checking for your insurance policy
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Overall Risk Score</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">{gapAnalysis.overallRiskScore}/100</div>
+            <Progress value={gapAnalysis.overallRiskScore} className="mt-2" />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Critical Gaps</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{gapAnalysis.criticalGaps}</div>
+            <p className="text-sm text-muted-foreground mt-1">Require immediate attention</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Missing Coverage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{gapAnalysis.missingCoverages.length}</div>
+            <p className="text-sm text-muted-foreground mt-1">Coverages not found</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Adequate Coverage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{gapAnalysis.adequateCoverages.length}</div>
+            <p className="text-sm text-muted-foreground mt-1">Properly protected</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="gaps" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Executive Overview</TabsTrigger>
-          <TabsTrigger value="coverage">Coverage Analysis</TabsTrigger>
-          <TabsTrigger value="gaps">Gap Analysis</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance Check</TabsTrigger>
+          <TabsTrigger value="gaps">Coverage Gaps</TabsTrigger>
+          <TabsTrigger value="adequate">Adequate Coverage</TabsTrigger>
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+          <TabsTrigger value="company">Company Profile</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
-          <div className="space-y-6">
-            {/* Overall Scores */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">
-                      {overallInsights.coverageScore}%
-                    </div>
-                    <p className="text-sm text-muted-foreground">Coverage Analysis</p>
-                    <Progress value={overallInsights.coverageScore} className="mt-2" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-red-600 mb-2">
-                      {overallInsights.gapScore}%
-                    </div>
-                    <p className="text-sm text-muted-foreground">Gap Identification</p>
-                    <Progress value={overallInsights.gapScore} className="mt-2" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600 mb-2">
-                      {overallInsights.complianceScore}%
-                    </div>
-                    <p className="text-sm text-muted-foreground">Compliance Check</p>
-                    <Progress value={overallInsights.complianceScore} className="mt-2" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Risk Level Alert */}
-            <Alert className={`border-l-4 ${getRiskLevelColor(overallInsights.overallRiskLevel)}`}>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Overall Risk Assessment: {overallInsights.overallRiskLevel}</AlertTitle>
-              <AlertDescription>
-                Based on comprehensive analysis of your coverage, gaps, and compliance status.
-              </AlertDescription>
-            </Alert>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Analysis Scores Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="score">
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Coverage Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={100}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}%`}
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Key Findings */}
-            <Card>
+        <TabsContent value="gaps" className="space-y-4">
+          {gapAnalysis.missingCoverages.length > 0 && (
+            <Card className="border-destructive">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  Key Findings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {overallInsights.keyFindings.map((finding, index) => (
-                    <div key={index} className="flex items-start gap-2 p-2 rounded border">
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                      <p className="text-sm">{finding}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Priority Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Priority Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {overallInsights.priorityActions.map((action, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{action.action}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Impact: {action.impact}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        {getUrgencyBadge(action.urgency)}
-                        <Badge variant="outline">{action.impact} Impact</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Generate Report */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Comprehensive Report</CardTitle>
+                <CardTitle className="text-destructive">Missing Coverage</CardTitle>
                 <CardDescription>
-                  Download a complete analysis report with all findings and recommendations
+                  Critical insurance coverages that are required but not found in your policy
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={generateComprehensiveReport} className="w-full">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Complete Analysis Report
-                </Button>
+                <div className="space-y-4">
+                  {gapAnalysis.missingCoverages.map((gap, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-destructive/5">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold text-lg">{gap.requiredCoverage}</h4>
+                          <p className="text-sm text-muted-foreground">{gap.riskCategory}</p>
+                        </div>
+                        <Badge variant={getRiskBadgeVariant(gap.severity)}>
+                          {gap.severity}
+                        </Badge>
+                      </div>
+                      <p className="text-sm mb-2">{gap.reason}</p>
+                      <p className="text-sm font-medium">
+                        Recommended limit: {formatCurrency(gap.recommendedLimit)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-          </div>
+          )}
+
+          {gapAnalysis.underinsuredCoverages.length > 0 && (
+            <Card className="border-orange-500">
+              <CardHeader>
+                <CardTitle className="text-orange-600">Underinsured Coverage</CardTitle>
+                <CardDescription>
+                  Existing coverages with limits below recommended minimums
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {gapAnalysis.underinsuredCoverages.map((gap, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-orange-50">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold text-lg">{gap.requiredCoverage}</h4>
+                          <p className="text-sm text-muted-foreground">{gap.riskCategory}</p>
+                        </div>
+                        <Badge variant={getRiskBadgeVariant(gap.severity)}>
+                          {gap.severity}
+                        </Badge>
+                      </div>
+                      <p className="text-sm mb-2">{gap.reason}</p>
+                      <div className="flex justify-between text-sm">
+                        <span>Current: {formatCurrency(gap.currentLimit)}</span>
+                        <span>Recommended: {formatCurrency(gap.recommendedLimit)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="coverage">
-          <CoverageAnalyzer analysis={analysis} userContext={userContext} />
+        <TabsContent value="adequate" className="space-y-4">
+          <Card className="border-green-500">
+            <CardHeader>
+              <CardTitle className="text-green-600">Adequate Coverage</CardTitle>
+              <CardDescription>
+                Insurance coverages that meet or exceed recommended requirements
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {gapAnalysis.adequateCoverages.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {gapAnalysis.adequateCoverages.map((coverage, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-green-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold">{coverage.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Limit: {formatCurrency(coverage.limit)}
+                          </p>
+                        </div>
+                        <Badge variant="default" className="bg-green-600">
+                          {coverage.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No adequate coverages identified in current analysis.</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="gaps">
-          <GapRecommendationEngine analysis={analysis} userProfile={userContext} />
+        <TabsContent value="recommendations" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Actionable Recommendations</CardTitle>
+              <CardDescription>
+                Prioritized steps to improve your insurance coverage
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {gapAnalysis.recommendations.map((recommendation, index) => (
+                  <div key={index} className="flex items-start gap-3 p-4 border rounded-lg">
+                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      {index + 1}
+                    </div>
+                    <p className="text-sm flex-1">{recommendation}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="compliance">
-          <RegionalComplianceChecker analysis={analysis} initialRegion={userContext?.location || 'UK'} />
+        <TabsContent value="company" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Company Risk Profile</CardTitle>
+              <CardDescription>
+                Analysis based on your business characteristics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Industry</label>
+                    <p className="text-lg">{companyData.industry}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Employee Count</label>
+                    <p className="text-lg">{companyData.employeeCount}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Fleet Vehicles</label>
+                    <p className="text-lg">{companyData.fleetVehicles}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Has Premises</label>
+                    <p className="text-lg">{companyData.hasPremises ? 'Yes' : 'No'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Handles PII</label>
+                    <p className="text-lg">{companyData.handlesPII ? 'Yes' : 'No'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Location</label>
+                    <p className="text-lg">{companyData.location}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+
+      <Alert>
+        <AlertTitle>Analysis Methodology</AlertTitle>
+        <AlertDescription>
+          This analysis uses a rule-based framework to compare your current insurance coverage against industry-standard requirements based on your business profile. 
+          The recommendations are generated by evaluating risk factors such as industry type, employee count, premises ownership, and data handling practices.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 };
