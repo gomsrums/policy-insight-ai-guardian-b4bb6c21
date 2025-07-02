@@ -135,7 +135,7 @@ export const analyzeGaps = (companyData: CompanyData): GapAnalysisResult => {
   RISK_RULES.forEach(rule => {
     if (rule.conditionCheck(companyData)) {
       const existingCoverage = companyData.coverages.find(c => 
-        normalizeCoverage(c.name) === normalizeRequ (rule.requiredCoverage)
+        normalizeCoverage(c.name) === normalizeRequiredCoverage(rule.requiredCoverage)
       );
 
       if (!existingCoverage) {
@@ -189,7 +189,7 @@ export const analyzeGaps = (companyData: CompanyData): GapAnalysisResult => {
 };
 
 // Helper functions
-const normalizeRule = (coverage: string): string => {
+const normalizeCoverage = (coverage: string): string => {
   const mapping: { [key: string]: string } = {
     'General Liability': 'general liability',
     'Cyber Liability': 'cyber liability',
