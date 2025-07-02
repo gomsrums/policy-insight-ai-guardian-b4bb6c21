@@ -28,22 +28,27 @@ export interface RiskRule {
   conditionCheck: (data: CompanyData) => boolean;
 }
 
-export interface GapAnalysisResult {
-  missingCoverages: Gap[];
-  underinsuredCoverages: Gap[];
-  adequateCoverages: Coverage[];
-  overallRiskScore: number;
-  criticalGaps: number;
-  recommendations: string[];
+// Updated gap output format as specified
+export interface CoverageGap {
+  category: string;
+  covered: boolean;
+  status: 'Missing' | 'Underinsured' | 'Adequate';
+  coverageName: string;
+  coverageLimit: number;
+  recommendedMinimum: number;
+  severity: string;
+  estimatedExposure: number;
+  complianceRisk: boolean;
+  recommendation: string;
+  colorCode: string;
 }
 
-export interface Gap {
-  riskCategory: string;
-  requiredCoverage: string;
-  currentLimit: number;
-  recommendedLimit: number;
-  severity: string;
-  reason: string;
+export interface GapAnalysisResult {
+  coverageGaps: CoverageGap[];
+  overallRiskScore: number;
+  criticalGaps: number;
+  totalGaps: number;
+  adequateCoverages: number;
 }
 
 // Rule-based framework from the image
@@ -54,13 +59,13 @@ const RISK_RULES: RiskRule[] = [
     requiredCoverage: "General Liability",
     minLimit: 1000000,
     severity: "High",
-    conditionCheck: () => true // Always required
+    conditionCheck: () => true
   },
   {
     riskCategory: "Cyber Risk",
     requiredCondition: "If handlesPII = true",
     requiredCoverage: "Cyber Liability",
-    minLimit: 1000000,
+    minLimit: 2000000,
     severity: "Critical",
     conditionCheck: (data: CompanyData) => data.handlesPII
   },
@@ -107,15 +112,7 @@ const RISK_RULES: RiskRule[] = [
       data.employeeCount > 25 || data.industry === 'Finance'
   },
   {
-    riskCategory: "Legal Defense",
-    requiredCondition: "Optional",
-    requiredCoverage: "Legal Expense",
-    minLimit: 0,
-    severity: "Low",
-    conditionCheck: () => false // Optional, not required
-  },
-  {
-    riskCategory: "Environmental",
+    riskCategory: "Environmental Risk",
     requiredCondition: "If industry = Manufacturing/Construction",
     requiredCoverage: "Pollution Liability",
     minLimit: 1000000,
@@ -126,10 +123,7 @@ const RISK_RULES: RiskRule[] = [
 ];
 
 export const analyzeGaps = (companyData: CompanyData): GapAnalysisResult => {
-  const missingCoverages: Gap[] = [];
-  const underinsuredCoverages: Gap[] = [];
-  const adequateCoverages: Coverage[] = [];
-  const recommendations: string[] = [];
+  const coverageGaps: CoverageGap[] = [];
 
   // Check each rule against the company data
   RISK_RULES.forEach(rule => {
@@ -140,51 +134,68 @@ export const analyzeGaps = (companyData: CompanyData): GapAnalysisResult => {
 
       if (!existingCoverage) {
         // Missing coverage
-        missingCoverages.push({
-          riskCategory: rule.riskCategory,
-          requiredCoverage: rule.requiredCoverage,
-          currentLimit: 0,
-          recommendedLimit: rule.minLimit,
+        coverageGaps.push({
+          category: rule.riskCategory,
+          covered: false,
+          status: 'Missing',
+          coverageName: rule.requiredCoverage,
+          coverageLimit: 0,
+          recommendedMinimum: rule.minLimit,
           severity: rule.severity,
-          reason: `Required based on condition: ${rule.requiredCondition}`
+          estimatedExposure: calculateEstimatedExposure(rule.riskCategory, companyData),
+          complianceRisk: rule.severity === 'Critical' || rule.severity === 'High',
+          recommendation: `Add ${rule.requiredCoverage} with minimum limit of ${formatCurrency(rule.minLimit)} due to ${rule.requiredCondition.toLowerCase()}.`,
+          colorCode: getSeverityColorCode(rule.severity)
         });
-        
-        recommendations.push(
-          `Add ${rule.requiredCoverage} with minimum limit of $${formatCurrency(rule.minLimit)} due to ${rule.requiredCondition.toLowerCase()}`
-        );
       } else if (existingCoverage.limit < rule.minLimit && rule.minLimit > 0) {
         // Underinsured coverage
-        underinsuredCoverages.push({
-          riskCategory: rule.riskCategory,
-          requiredCoverage: rule.requiredCoverage,
-          currentLimit: existingCoverage.limit,
-          recommendedLimit: rule.minLimit,
+        coverageGaps.push({
+          category: rule.riskCategory,
+          covered: true,
+          status: 'Underinsured',
+          coverageName: rule.requiredCoverage,
+          coverageLimit: existingCoverage.limit,
+          recommendedMinimum: rule.minLimit,
           severity: rule.severity,
-          reason: `Current limit of $${formatCurrency(existingCoverage.limit)} is below recommended minimum of $${formatCurrency(rule.minLimit)}`
+          estimatedExposure: calculateEstimatedExposure(rule.riskCategory, companyData),
+          complianceRisk: rule.severity === 'Critical' || rule.severity === 'High',
+          recommendation: `Increase ${rule.requiredCoverage} coverage from ${formatCurrency(existingCoverage.limit)} to at least ${formatCurrency(rule.minLimit)}.`,
+          colorCode: getSeverityColorCode(rule.severity)
         });
-        
-        recommendations.push(
-          `Increase ${rule.requiredCoverage} limit from $${formatCurrency(existingCoverage.limit)} to at least $${formatCurrency(rule.minLimit)}`
-        );
-      } else if (existingCoverage) {
+      } else if (existingCoverage && existingCoverage.limit >= rule.minLimit) {
         // Adequate coverage
-        adequateCoverages.push(existingCoverage);
+        coverageGaps.push({
+          category: rule.riskCategory,
+          covered: true,
+          status: 'Adequate',
+          coverageName: rule.requiredCoverage,
+          coverageLimit: existingCoverage.limit,
+          recommendedMinimum: rule.minLimit,
+          severity: 'Low',
+          estimatedExposure: 0,
+          complianceRisk: false,
+          recommendation: `Current ${rule.requiredCoverage} coverage is adequate.`,
+          colorCode: '#10B981'
+        });
       }
     }
   });
 
-  const criticalGaps = [...missingCoverages, ...underinsuredCoverages]
-    .filter(gap => gap.severity === 'Critical').length;
+  const criticalGaps = coverageGaps.filter(gap => 
+    gap.severity === 'Critical' && gap.status !== 'Adequate'
+  ).length;
 
-  const overallRiskScore = calculateRiskScore(missingCoverages, underinsuredCoverages);
+  const totalGaps = coverageGaps.filter(gap => gap.status !== 'Adequate').length;
+  const adequateCoverages = coverageGaps.filter(gap => gap.status === 'Adequate').length;
+
+  const overallRiskScore = calculateRiskScore(coverageGaps);
 
   return {
-    missingCoverages,
-    underinsuredCoverages,
-    adequateCoverages,
+    coverageGaps,
     overallRiskScore,
     criticalGaps,
-    recommendations
+    totalGaps,
+    adequateCoverages
   };
 };
 
@@ -198,7 +209,6 @@ const normalizeCoverage = (coverage: string): string => {
     'Property Insurance': 'property insurance',
     'EPLI': 'employment practices liability',
     'D&O Liability': 'directors and officers',
-    'Legal Expense': 'legal expenses',
     'Pollution Liability': 'environmental liability'
   };
   
@@ -214,45 +224,82 @@ const normalizeRequiredCoverage = (coverage: string): string => {
     'Property Insurance': 'property insurance',
     'EPLI': 'employment practices liability',
     'D&O Liability': 'directors and officers',
-    'Legal Expense': 'legal expenses',
     'Pollution Liability': 'environmental liability'
   };
   
   return mapping[coverage] || coverage.toLowerCase();
 };
 
-const formatCurrency = (amount: number): string => {
-  if (amount >= 1000000) {
-    return `${(amount / 1000000).toFixed(1)}M`;
-  } else if (amount >= 1000) {
-    return `${(amount / 1000).toFixed(0)}K`;
+const calculateEstimatedExposure = (riskCategory: string, companyData: CompanyData): number => {
+  // Calculate estimated exposure based on company profile
+  const { annualRevenue, employeeCount, fleetVehicles } = companyData;
+  
+  switch (riskCategory) {
+    case 'Cyber Risk':
+      return Math.min(annualRevenue * 0.05, 500000); // 5% of revenue or max $500K
+    case 'General Liability':
+      return Math.min(annualRevenue * 0.02, 250000); // 2% of revenue or max $250K
+    case 'Employment Risk':
+      return employeeCount * 5000; // $5K per employee
+    case 'Auto/Fleet':
+      return fleetVehicles * 50000; // $50K per vehicle
+    case 'Professional Risk':
+      return Math.min(annualRevenue * 0.03, 300000); // 3% of revenue or max $300K
+    case 'Premises Risk':
+      return Math.min(annualRevenue * 0.01, 200000); // 1% of revenue or max $200K
+    case 'Executive Risk':
+      return Math.min(annualRevenue * 0.02, 400000); // 2% of revenue or max $400K
+    case 'Environmental Risk':
+      return Math.min(annualRevenue * 0.04, 600000); // 4% of revenue or max $600K
+    default:
+      return 100000; // Default exposure
   }
-  return amount.toString();
 };
 
-const calculateRiskScore = (missing: Gap[], underinsured: Gap[]): number => {
+const getSeverityColorCode = (severity: string): string => {
+  switch (severity) {
+    case 'Critical': return '#DC2626'; // Red
+    case 'High': return '#FFA500'; // Orange
+    case 'Medium': return '#F59E0B'; // Amber
+    case 'Low': return '#10B981'; // Green
+    default: return '#6B7280'; // Gray
+  }
+};
+
+const formatCurrency = (amount: number): string => {
+  if (amount >= 1000000) {
+    return `$${(amount / 1000000).toFixed(1)}M`;
+  } else if (amount >= 1000) {
+    return `$${(amount / 1000).toFixed(0)}K`;
+  }
+  return `$${amount}`;
+};
+
+const calculateRiskScore = (gaps: CoverageGap[]): number => {
+  if (gaps.length === 0) return 100;
+  
   const severityWeights = { Critical: 4, High: 3, Medium: 2, Low: 1 };
   
-  const missingScore = missing.reduce((sum, gap) => 
-    sum + severityWeights[gap.severity as keyof typeof severityWeights], 0);
-  const underinsuredScore = underinsured.reduce((sum, gap) => 
-    sum + (severityWeights[gap.severity as keyof typeof severityWeights] * 0.5), 0);
+  const totalWeightedScore = gaps.reduce((sum, gap) => {
+    const weight = severityWeights[gap.severity as keyof typeof severityWeights] || 1;
+    if (gap.status === 'Missing') return sum + weight;
+    if (gap.status === 'Underinsured') return sum + (weight * 0.5);
+    return sum; // Adequate coverage doesn't reduce score
+  }, 0);
   
-  const totalScore = missingScore + underinsuredScore;
-  const maxPossibleScore = RISK_RULES.length * 4; // All critical gaps
+  const maxPossibleScore = gaps.length * 4; // All gaps as critical
+  const scoreReduction = (totalWeightedScore / maxPossibleScore) * 100;
   
-  return Math.max(0, 100 - Math.round((totalScore / maxPossibleScore) * 100));
+  return Math.max(0, Math.round(100 - scoreReduction));
 };
 
 // Convert ChatPDF analysis to company data format
 export const convertAnalysisToCompanyData = (analysis: AnalysisResult): CompanyData => {
-  // Extract company information from the policy text/summary
   const summary = analysis.summary.toLowerCase();
   
-  // Basic company data extraction (this would be enhanced with better NLP)
   const extractEmployeeCount = (): number => {
     const match = summary.match(/(\d+)\s*employees?/i);
-    return match ? parseInt(match[1]) : 10; // Default assumption
+    return match ? parseInt(match[1]) : 15; // Default assumption
   };
 
   const extractIndustry = (): string => {
@@ -260,6 +307,8 @@ export const convertAnalysisToCompanyData = (analysis: AnalysisResult): CompanyD
     if (summary.includes('manufacturing')) return 'Manufacturing';
     if (summary.includes('construction')) return 'Construction';
     if (summary.includes('finance') || summary.includes('financial')) return 'Finance';
+    if (summary.includes('consulting')) return 'Consulting';
+    if (summary.includes('service')) return 'Service';
     return 'General Business';
   };
 
@@ -268,17 +317,26 @@ export const convertAnalysisToCompanyData = (analysis: AnalysisResult): CompanyD
     return match ? parseInt(match[1]) : 0;
   };
 
+  const extractRevenue = (): number => {
+    const match = summary.match(/\$?([\d,]+)(?:k|m|million|thousand)/i);
+    if (match) {
+      const value = parseInt(match[1].replace(/,/g, ''));
+      if (match[0].toLowerCase().includes('m')) return value * 1000000;
+      if (match[0].toLowerCase().includes('k')) return value * 1000;
+    }
+    return 5000000; // Default $5M
+  };
+
   // Extract existing coverages from the analysis
   const coverages: Coverage[] = [];
   
-  // Parse covered risks into coverage format
   if (analysis.risk_assessment?.risk_factors) {
     analysis.risk_assessment.risk_factors.forEach(risk => {
       const coverage = mapRiskToCoverage(risk);
       if (coverage) {
         coverages.push({
           name: coverage,
-          limit: 1000000, // Default limit - would need better extraction
+          limit: extractCoverageLimit(summary, coverage),
           status: 'Active'
         });
       }
@@ -288,22 +346,55 @@ export const convertAnalysisToCompanyData = (analysis: AnalysisResult): CompanyD
   return {
     companyId: `C${Date.now()}`,
     industry: extractIndustry(),
-    location: 'Unknown', // Would need better extraction
+    location: 'Unknown',
     employeeCount: extractEmployeeCount(),
-    annualRevenue: 5000000, // Default assumption
+    annualRevenue: extractRevenue(),
     fleetVehicles: extractFleetVehicles(),
-    hasPremises: summary.includes('property') || summary.includes('building'),
-    handlesPII: summary.includes('data') || summary.includes('personal information'),
+    hasPremises: summary.includes('property') || summary.includes('building') || summary.includes('premises'),
+    handlesPII: summary.includes('data') || summary.includes('personal information') || summary.includes('cyber'),
     coverages
   };
 };
 
 const mapRiskToCoverage = (risk: string): string | null => {
   const riskLower = risk.toLowerCase();
-  if (riskLower.includes('liability')) return 'General Liability';
+  if (riskLower.includes('liability') && !riskLower.includes('cyber')) return 'General Liability';
   if (riskLower.includes('cyber') || riskLower.includes('data')) return 'Cyber Liability';
   if (riskLower.includes('auto') || riskLower.includes('vehicle')) return 'Commercial Auto';
   if (riskLower.includes('property') || riskLower.includes('building')) return 'Property Insurance';
-  if (riskLower.includes('professional')) return 'E&O Insurance';
+  if (riskLower.includes('professional') || riskLower.includes('e&o')) return 'E&O Insurance';
+  if (riskLower.includes('employment') || riskLower.includes('epli')) return 'EPLI';
+  if (riskLower.includes('directors') || riskLower.includes('d&o')) return 'D&O Liability';
   return null;
+};
+
+const extractCoverageLimit = (summary: string, coverageType: string): number => {
+  // Try to extract coverage limits from summary text
+  const patterns = [
+    /\$?([\d,]+)(?:k|m|million|thousand)/gi,
+    /limit[s]?\s*[of]?\s*\$?([\d,]+)/gi
+  ];
+  
+  for (const pattern of patterns) {
+    const matches = summary.match(pattern);
+    if (matches && matches.length > 0) {
+      const match = matches[0];
+      const value = parseInt(match.replace(/[^\d]/g, ''));
+      if (match.toLowerCase().includes('m')) return value * 1000000;
+      if (match.toLowerCase().includes('k')) return value * 1000;
+      return value;
+    }
+  }
+  
+  // Default limits based on coverage type
+  switch (coverageType) {
+    case 'General Liability': return 1000000;
+    case 'Cyber Liability': return 500000;
+    case 'Commercial Auto': return 1000000;
+    case 'Property Insurance': return 1000000;
+    case 'E&O Insurance': return 1000000;
+    case 'EPLI': return 500000;
+    case 'D&O Liability': return 1000000;
+    default: return 500000;
+  }
 };
