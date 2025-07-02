@@ -11,10 +11,9 @@ import TextInput from "@/components/TextInput";
 import DocumentPreview from "@/components/DocumentPreview";
 import AnalysisResults from "@/components/AnalysisResults";
 import ChatInterface from "@/components/ChatInterface";
-import BenchmarkComparison from "@/components/BenchmarkComparison";
-import VoiceChatInterface from "@/components/VoiceChatInterface";
-import { PolicyDocument, AnalysisResult, PolicyBenchmark } from "@/lib/chatpdf-types";
-import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
+import ComprehensiveAnalysisDashboard from "@/components/ComprehensiveAnalysisDashboard";
+import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
+import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/insurance-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
 
 const Index = () => {
@@ -22,13 +21,50 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("file");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [activeResultTab, setActiveResultTab] = useState("summary");
+  const [activeResultTab, setActiveResultTab] = useState("comprehensive");
   const [isChatting, setIsChatting] = useState(false);
-  const [benchmark, setBenchmark] = useState<PolicyBenchmark | null>(null);
-  const [isLoadingGaps, setIsLoadingGaps] = useState(false);
-  const [coverageGaps, setCoverageGaps] = useState<string[]>([]);
   const [analysisHistory, setAnalysisHistory] = useState([]);
   const { toast } = useToast();
+
+  // Sample policy text for demonstration
+  const samplePolicyText = `
+COMPREHENSIVE HOME INSURANCE POLICY
+
+Policy Number: HI-2024-001
+Policyholder: John Smith
+Property Address: 123 Main Street, London, UK
+
+SECTION A: PROPERTY COVERAGE
+This policy covers your dwelling and personal property against the following perils:
+- Fire and lightning damage
+- Windstorm and hail damage
+- Explosion and smoke damage
+- Theft and burglary
+- Vandalism and malicious mischief
+- Water damage from burst pipes
+
+Coverage Limits:
+- Dwelling: £300,000
+- Personal Property: £150,000
+- Additional Living Expenses: £50,000
+
+SECTION B: LIABILITY COVERAGE
+Personal liability coverage: £1,000,000
+Medical payments to others: £5,000
+
+EXCLUSIONS:
+This policy does not cover:
+- Flood damage
+- Earthquake damage
+- War and nuclear hazards
+- Intentional damage by insured
+- Business activities conducted on premises
+
+DEDUCTIBLE: £500 per claim
+
+Premium: £1,200 annually
+Policy Period: January 1, 2024 to January 1, 2025
+  `;
 
   useEffect(() => {
     if (analysisResult?.document_id) {
@@ -39,7 +75,8 @@ const Index = () => {
   }, [analysisResult?.document_id]);
 
   const handleFileAdded = (newDocument: PolicyDocument) => {
-    setDocuments([...documents, newDocument]);
+    setDocuments([newDocument]);
+    analyzeDocument(newDocument);
   };
 
   const handleTextAdded = (newDocument: PolicyDocument) => {
@@ -47,18 +84,29 @@ const Index = () => {
     analyzeDocument(newDocument);
   };
 
+  const handleUseSampleText = () => {
+    setActiveTab("text");
+    // Create a sample document and analyze it
+    const sampleDocument: PolicyDocument = {
+      id: `sample-${Date.now()}`,
+      name: "Sample Home Insurance Policy",
+      type: "text",
+      content: samplePolicyText,
+      status: "ready"
+    };
+    setDocuments([sampleDocument]);
+    analyzeDocument(sampleDocument);
+  };
+
   const handleRemoveDocument = (id: string) => {
     const documentToRemove = documents.find(doc => doc.id === id);
     setDocuments(documents.filter(doc => doc.id !== id));
     
-    // Clean up any preview URLs to prevent memory leaks
     if (documentToRemove?.previewUrl) {
       URL.revokeObjectURL(documentToRemove.previewUrl);
     }
     
-    // Reset analysis results when removing the document
     setAnalysisResult(null);
-    setBenchmark(null);
   };
 
   const analyzeDocument = async (document: PolicyDocument) => {
@@ -70,7 +118,6 @@ const Index = () => {
     try {
       console.log("Starting comprehensive policy analysis with ChatPDF:", document.name);
       
-      // Update document status to processing
       setDocuments(docs => 
         docs.map(doc => 
           doc.id === document.id 
@@ -79,24 +126,20 @@ const Index = () => {
         )
       );
       
-      // Call the ChatPDF API to analyze the document
       const result = await uploadDocumentForAnalysis(document);
       console.log("ChatPDF analysis completed successfully:", result);
       
-      // Ensure we have a valid result with document_id
       if (!result || typeof result !== 'object' || !result.document_id) {
         throw new Error("Invalid analysis result returned from ChatPDF API");
       }
       
       setAnalysisResult(result);
       
-      // Save analysis history
       if (result && result.document_id) {
         saveAnalysisResultHistory(result);
         getAnalysisResultsHistory(result.document_id).then(setAnalysisHistory);
       }
       
-      // Update document status to ready
       setDocuments(docs => 
         docs.map(doc => 
           doc.id === document.id 
@@ -110,12 +153,10 @@ const Index = () => {
         description: "Your insurance policy has been comprehensively analyzed using ChatPDF.",
       });
 
-      // Set to summary tab
-      setActiveResultTab("summary");
+      setActiveResultTab("comprehensive");
     } catch (error) {
       console.error("Error analyzing document:", error);
       
-      // Update document status to error
       setDocuments(docs => 
         docs.map(doc => 
           doc.id === document.id 
@@ -138,7 +179,6 @@ const Index = () => {
     if (documents.length > 0) {
       const firstDoc = documents[0];
       if (firstDoc.status === "error") {
-        // Reset status and retry
         setDocuments(docs => 
           docs.map(doc => 
             doc.id === firstDoc.id 
@@ -157,60 +197,15 @@ const Index = () => {
     }
   };
 
-  const fetchCoverageGaps = async () => {
-    if (!analysisResult?.document_id) return;
-    
-    setIsLoadingGaps(true);
-    setCoverageGaps([]);
-    
-    try {
-      // Get the current document ID
-      const documentId = analysisResult.document_id;
-      
-      // Fetch coverage gaps from ChatPDF
-      const response = await getCoverageGaps(documentId);
-      
-      // Parse the response into an array
-      if (typeof response === 'string') {
-        // Split by newlines and filter out empty lines
-        const gaps = response.split('\n')
-          .filter(gap => gap.trim().length > 0)
-          .map(gap => gap.replace(/^[•\-\d\.]\s*/, '').trim())
-          .filter(gap => gap.length > 0);
-        setCoverageGaps(gaps);
-      } else if (Array.isArray(response)) {
-        setCoverageGaps(response);
-      } else {
-        setCoverageGaps(['No coverage gaps analysis available']);
-      }
-      
-      toast({
-        title: "Coverage Gaps Analysis Complete",
-        description: "Your policy has been analyzed for potential coverage gaps using ChatPDF.",
-      });
-    } catch (error) {
-      console.error("Error fetching coverage gaps:", error);
-      toast({
-        title: "Coverage Gaps Analysis Failed",
-        description: "There was an error analyzing your policy for coverage gaps.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingGaps(false);
-    }
-  };
-
   const handleSendMessage = async (message: string) => {
     setIsChatting(true);
     try {
-      // Get the current document ID
       const documentId = analysisResult?.document_id;
       
       if (!documentId) {
         return "Please upload and analyze a document first before asking questions.";
       }
       
-      // Send the chat message to ChatPDF
       const response = await sendChatMessage(documentId, message);
       return response;
     } catch (error) {
@@ -252,7 +247,7 @@ const Index = () => {
                 variant="outline" 
                 size="lg"
                 className="px-8 py-4 text-lg"
-                onClick={() => setActiveTab("text")}
+                onClick={handleUseSampleText}
               >
                 Try With Sample Text
               </Button>
@@ -416,10 +411,16 @@ const Index = () => {
                   <Tabs value={activeResultTab} onValueChange={setActiveResultTab}>
                     <TabsList className="w-full border-b mb-6 bg-transparent h-auto p-0">
                       <TabsTrigger 
+                        value="comprehensive" 
+                        className="flex-1 text-sm py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                      >
+                        📊 Comprehensive Analysis
+                      </TabsTrigger>
+                      <TabsTrigger 
                         value="summary" 
                         className="flex-1 text-sm py-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
                       >
-                        📊 Analysis Results
+                        📋 Policy Summary
                       </TabsTrigger>
                       <TabsTrigger 
                         value="chat" 
@@ -429,7 +430,7 @@ const Index = () => {
                       </TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="summary">
+                    <TabsContent value="comprehensive">
                       {!analysisResult && !isAnalyzing && (
                         <div className="text-center py-16">
                           <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -450,7 +451,7 @@ const Index = () => {
                             </Button>
                             <Button 
                               variant="outline"
-                              onClick={() => setActiveTab("text")}
+                              onClick={handleUseSampleText}
                             >
                               Try Sample Text
                             </Button>
@@ -475,33 +476,32 @@ const Index = () => {
                       )}
                       
                       {analysisResult && !isAnalyzing && (
-                        <AnalysisResults analysis={analysisResult} />
+                        <ComprehensiveAnalysisDashboard 
+                          analysis={analysisResult} 
+                          userContext={{
+                            location: 'UK',
+                            propertyType: 'Residential',
+                            businessType: 'Individual',
+                            industry: 'Personal'
+                          }}
+                        />
                       )}
-                      
-                      {analysisHistory.length > 0 && (
-                        <div className="mt-8 pt-6 border-t">
-                          <h4 className="font-semibold text-lg mb-4 text-foreground">Recent Analyses</h4>
-                          <div className="grid gap-3">
-                            {analysisHistory.map((entry: any) => (
-                              <div key={entry.id} className="border rounded-lg p-4 bg-muted/30 hover:bg-muted/50 transition-colors">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <p className="font-medium text-sm text-foreground">
-                                      {entry.summary?.slice(0, 60) ?? "No summary available"}...
-                                    </p>
-                                    {entry.risk_level && (
-                                      <span className="inline-block mt-2 px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
-                                        Risk: {entry.risk_level}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className="text-xs text-muted-foreground ml-3">
-                                    {new Date(entry.created_at).toLocaleDateString()}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                    </TabsContent>
+
+                    <TabsContent value="summary">
+                      {analysisResult && !isAnalyzing ? (
+                        <AnalysisResults analysis={analysisResult} />
+                      ) : (
+                        <div className="text-center py-16">
+                          <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span className="text-4xl">📄</span>
                           </div>
+                          <h3 className="text-xl font-semibold text-foreground mb-4">
+                            Policy Summary
+                          </h3>
+                          <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                            Upload and analyze a policy to view detailed summary and recommendations
+                          </p>
                         </div>
                       )}
                     </TabsContent>
