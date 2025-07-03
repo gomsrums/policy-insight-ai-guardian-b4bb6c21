@@ -15,10 +15,15 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     } else if (document.file) {
       // For PDF files, we'll need to extract text content
       // For now, we'll use a placeholder - in production you'd use PDF parsing
-      documentContent = "PDF content extraction would be implemented here";
+      documentContent = "PDF content extraction would be implemented here. Please use the text input option for now.";
       console.log("Using placeholder content for PDF file");
     } else {
       throw new Error("No content available for analysis");
+    }
+
+    // Validate content length
+    if (documentContent.length < 50) {
+      throw new Error("Document content is too short for meaningful analysis. Please provide more detailed policy information.");
     }
 
     console.log("Making request to:", HF_FUNCTION_URL);
@@ -211,8 +216,11 @@ export const sendChatMessage = async (documentId: string, question: string): Pro
     console.log("Sending chat message to Hugging Face for document:", documentId);
 
     // We need to get the document content again for context
-    // In a real implementation, you'd store this in a database
     const storedContent = localStorage.getItem(`document_${documentId}`);
+    
+    if (!storedContent) {
+      return "I'm sorry, but I don't have access to your document content. Please try uploading your document again.";
+    }
     
     const response = await fetch(HF_FUNCTION_URL, {
       method: "POST",
@@ -221,7 +229,7 @@ export const sendChatMessage = async (documentId: string, question: string): Pro
       },
       body: JSON.stringify({
         action: "chat",
-        document_content: storedContent || "Document content not available",
+        document_content: storedContent,
         question: question,
       }),
     });
@@ -234,9 +242,9 @@ export const sendChatMessage = async (documentId: string, question: string): Pro
     
     const data = await response.json();
     console.log("Hugging Face chat response:", data);
-    return data.response || "I'm sorry, I couldn't process your question.";
+    return data.response || "I'm sorry, I couldn't process your question. Please try rephrasing it.";
   } catch (error) {
     console.error("Error sending chat message to Hugging Face:", error);
-    throw error;
+    return "I'm sorry, there was an error processing your question. Please try again.";
   }
 };
