@@ -1,7 +1,7 @@
 
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 
-const CHATPDF_API_KEY = "sec_t759nqrP5IPLQM9ssZXIx0aHIK0hiv3k";
+const CHATPDF_API_KEY = "sec_EvOyQVA4IfSmWsdU3EZufWHAhgUEN2WS";
 const CHATPDF_BASE_URL = "https://api.chatpdf.com/v1";
 
 export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promise<AnalysisResult> => {

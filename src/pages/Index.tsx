@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
@@ -161,6 +162,8 @@ Policy Period: January 1, 2024 to January 1, 2025
           errorMessage = "File is too large. Please try a smaller file.";
         } else if (error.message.includes("network") || error.message.includes("fetch")) {
           errorMessage = "Network error. Please check your internet connection and try again.";
+        } else if (error.message.includes("Invalid analysis result")) {
+          errorMessage = "ChatPDF returned an invalid response. Please try again.";
         } else {
           errorMessage = error.message;
         }
