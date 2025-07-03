@@ -66,13 +66,31 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Always render chat.
   return (
     <div className="flex flex-col h-full">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
+          💬 Chat with Your Policy
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Ask questions about your policy coverage, terms, and conditions
+        </p>
+      </div>
+      
       <ScrollArea className="flex-grow mb-4 p-4 border rounded-md bg-gray-50">
         {chatHistory.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>Start asking questions about your policy</p>
+            <div className="mb-4">
+              <span className="text-4xl">🤖</span>
+            </div>
+            <p className="mb-4">Hi! I'm your AI insurance assistant.</p>
+            <p className="text-sm">Try asking me:</p>
+            <div className="mt-3 space-y-1 text-sm text-gray-400">
+              <p>• "What is covered under this policy?"</p>
+              <p>• "What are the exclusions?"</p>
+              <p>• "What is my deductible?"</p>
+              <p>• "How much coverage do I have?"</p>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -86,14 +104,14 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
                 <div
                   className={`max-w-[80%] rounded-lg p-3 ${
                     msg.role === "user"
-                      ? "bg-insurance-blue text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-white border border-gray-200"
                   }`}
                 >
                   <div className="whitespace-pre-wrap">{msg.content}</div>
                   <div
                     className={`text-xs mt-1 ${
-                      msg.role === "user" ? "text-blue-100" : "text-gray-400"
+                      msg.role === "user" ? "text-primary-foreground/70" : "text-gray-400"
                     }`}
                   >
                     {formatTimestamp(msg.timestamp)}
@@ -104,6 +122,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
           </div>
         )}
       </ScrollArea>
+      
       <div className="flex gap-2">
         <Textarea
           placeholder="Ask a question about your policy..."
@@ -121,7 +140,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         <Button
           onClick={handleSendMessage}
           disabled={!message.trim() || !sourceId || isLoading}
-          className="bg-insurance-blue hover:bg-insurance-blue-dark self-end"
+          className="self-end"
         >
           <Send className="h-4 w-4" />
         </Button>
