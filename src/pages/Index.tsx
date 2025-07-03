@@ -120,7 +120,7 @@ Policy Period: January 1, 2024 to January 1, 2025
       );
       
       const result = await uploadDocumentForAnalysis(document);
-      console.log("Document analyzed:", result);
+      console.log("Document analyzed successfully:", result);
       
       if (!result || typeof result !== 'object' || !result.document_id) {
         throw new Error("Invalid analysis result returned from ChatPDF API");
@@ -150,17 +150,33 @@ Policy Period: January 1, 2024 to January 1, 2025
     } catch (error) {
       console.error("Error processing document:", error);
       
+      let errorMessage = "There was an error analyzing your document. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("authentication") || error.message.includes("401")) {
+          errorMessage = "Authentication failed with ChatPDF. Please check the API configuration.";
+        } else if (error.message.includes("rate limit")) {
+          errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
+        } else if (error.message.includes("file too large")) {
+          errorMessage = "File is too large. Please try a smaller file.";
+        } else if (error.message.includes("network") || error.message.includes("fetch")) {
+          errorMessage = "Network error. Please check your internet connection and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       setDocuments(docs => 
         docs.map(doc => 
           doc.id === document.id 
-            ? { ...doc, status: "error", errorMessage: error.message || "Processing failed" } 
+            ? { ...doc, status: "error", errorMessage: errorMessage } 
             : doc
         )
       );
       
       toast({
         title: "Analysis Failed",
-        description: error.message || "There was an error analyzing your document. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -181,6 +197,15 @@ Policy Period: January 1, 2024 to January 1, 2025
       return response;
     } catch (error) {
       console.error("Error sending message:", error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes("authentication") || error.message.includes("401")) {
+          return "Authentication failed with ChatPDF. Please check the API configuration.";
+        } else {
+          return error.message;
+        }
+      }
+      
       return "Sorry, there was an error processing your message. Please try again.";
     } finally {
       setIsChatting(false);
