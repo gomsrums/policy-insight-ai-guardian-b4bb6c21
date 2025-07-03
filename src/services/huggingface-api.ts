@@ -1,7 +1,7 @@
 
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 
-const HF_FUNCTION_URL = "https://takieoywodunrjoteclz-supabase.co/functions/v1/insurance-analysis-hf";
+const HF_FUNCTION_URL = "https://takieoywodunrjoteclz.supabase.co/functions/v1/insurance-analysis-hf";
 
 export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promise<AnalysisResult> => {
   try {
