@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PolicyDocument } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
+import { MessageCircle } from "lucide-react";
 
 interface TextInputProps {
   onTextAdded: (document: PolicyDocument) => void;
@@ -94,7 +95,7 @@ startxref
     if (!text.trim()) {
       toast({
         title: "Empty Text",
-        description: "Please enter some text to analyze.",
+        description: "Please enter some text to chat with.",
         variant: "destructive",
       });
       return;
@@ -104,13 +105,13 @@ startxref
     
     try {
       // Convert text to PDF
-      const pdfFile = await createPDFFromText(text, "pasted-policy.pdf");
+      const pdfFile = await createPDFFromText(text, "policy-text.pdf");
       const previewUrl = URL.createObjectURL(pdfFile);
       
       // Create a document with the PDF file
       const newDocument: PolicyDocument = {
         id: nanoid(),
-        name: "Pasted Policy Text (PDF)",
+        name: "Policy Text Document",
         type: "file" as const,
         file: pdfFile,
         previewUrl: previewUrl,
@@ -119,8 +120,8 @@ startxref
       
       // Notify user
       toast({
-        title: "Text Converted to PDF",
-        description: "Your text has been converted to PDF and is ready for analysis...",
+        title: "Document Ready for Chat",
+        description: "Your policy text has been processed and is ready for chat...",
       });
       
       // Pass the document to the parent component
@@ -130,10 +131,10 @@ startxref
       setText("");
       
     } catch (error) {
-      console.error("Error converting text to PDF:", error);
+      console.error("Error processing text:", error);
       toast({
-        title: "Conversion Error",
-        description: "There was an error converting your text to PDF. Please try again.",
+        title: "Processing Error",
+        description: "There was an error processing your text. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -144,7 +145,7 @@ startxref
   return (
     <div className="space-y-3">
       <Textarea
-        placeholder="Paste your policy text here..."
+        placeholder="Paste your policy text here to chat with it..."
         value={text}
         onChange={(e) => setText(e.target.value)}
         className="min-h-[150px] md:min-h-[200px] text-sm"
@@ -156,7 +157,8 @@ startxref
           disabled={!text.trim() || isProcessing}
           className="bg-insurance-blue hover:bg-insurance-blue-dark text-sm px-4 py-2"
         >
-          {isProcessing ? "Converting to PDF..." : "Convert to PDF & Analyze"}
+          <MessageCircle className="h-4 w-4 mr-2" />
+          {isProcessing ? "Processing..." : "Chat with Policy"}
         </Button>
       </div>
     </div>
