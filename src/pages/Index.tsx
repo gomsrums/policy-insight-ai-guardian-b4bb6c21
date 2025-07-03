@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
@@ -7,7 +6,7 @@ import DocumentUploadSection from "@/components/DocumentUploadSection";
 import AnalysisResultsSection from "@/components/AnalysisResultsSection";
 import FooterSection from "@/components/FooterSection";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
-import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/huggingface-api";
+import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
 
 const Index = () => {
@@ -112,10 +111,6 @@ Policy Period: January 1, 2024 to January 1, 2025
     try {
       console.log("Processing document for analysis:", document.name);
       
-      if (document.content) {
-        localStorage.setItem(`document_hf-${Date.now()}`, document.content);
-      }
-      
       setDocuments(docs => 
         docs.map(doc => 
           doc.id === document.id 
@@ -128,7 +123,7 @@ Policy Period: January 1, 2024 to January 1, 2025
       console.log("Document analyzed:", result);
       
       if (!result || typeof result !== 'object' || !result.document_id) {
-        throw new Error("Invalid analysis result returned from API");
+        throw new Error("Invalid analysis result returned from ChatPDF API");
       }
       
       setAnalysisResult(result);
