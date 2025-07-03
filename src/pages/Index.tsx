@@ -207,23 +207,6 @@ Policy Period: January 1, 2024 to January 1, 2025
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
               Upload your insurance policy document and ask questions about your coverage, terms, and conditions through our AI-powered chat interface
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
-                onClick={() => setActiveTab("file")}
-              >
-                Upload Your Policy PDF
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="px-8 py-4 text-lg"
-                onClick={handleUseSampleText}
-              >
-                Try With Sample Text
-              </Button>
-            </div>
           </div>
         </div>
       </section>
