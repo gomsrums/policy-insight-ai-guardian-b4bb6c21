@@ -15,11 +15,22 @@ serve(async (req) => {
   }
 
   try {
-    const { action, document_content, question } = await req.json();
+    console.log('Starting insurance analysis request');
+    
+    const requestData = await req.json();
+    console.log('Request data received:', { 
+      action: requestData.action, 
+      contentLength: requestData.document_content?.length 
+    });
+    
+    const { action, document_content, question } = requestData;
 
     if (!hfApiKey) {
+      console.error('Hugging Face API key not configured');
       throw new Error('Hugging Face API key not configured');
     }
+
+    console.log('Hugging Face API key found, length:', hfApiKey.length);
 
     let prompt = '';
     
@@ -61,7 +72,10 @@ USER QUESTION: ${question}
 Please provide a helpful and accurate answer based on the policy information.`;
     }
 
-    const response = await fetch('https://api-inference.huggingface.co/models/bitext/Mistral-7B-Insurance', {
+    console.log('Making request to Hugging Face API with model: bitext/Mistral-7B-Insurance');
+    console.log('Prompt length:', prompt.length);
+
+    const hfResponse = await fetch('https://api-inference.huggingface.co/models/bitext/Mistral-7B-Insurance', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${hfApiKey}`,
@@ -78,31 +92,61 @@ Please provide a helpful and accurate answer based on the policy information.`;
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Hugging Face API error: ${error}`);
+    console.log('Hugging Face API response status:', hfResponse.status);
+    console.log('Hugging Face API response headers:', Object.fromEntries(hfResponse.headers.entries()));
+
+    if (!hfResponse.ok) {
+      const errorText = await hfResponse.text();
+      console.error('Hugging Face API error:', errorText);
+      throw new Error(`Hugging Face API error: ${hfResponse.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await hfResponse.json();
+    console.log('Hugging Face API response data structure:', typeof data, Array.isArray(data));
+    console.log('Hugging Face API response:', data);
+    
     let responseText = '';
     
     if (Array.isArray(data) && data.length > 0) {
       responseText = data[0].generated_text || data[0].text || '';
+      console.log('Extracted response from array:', responseText.length, 'characters');
     } else if (data.generated_text) {
       responseText = data.generated_text;
+      console.log('Extracted response from object:', responseText.length, 'characters');
+    } else if (typeof data === 'string') {
+      responseText = data;
+      console.log('Response is string:', responseText.length, 'characters');
     } else {
-      responseText = 'Analysis completed successfully.';
+      console.error('Unexpected response format:', data);
+      responseText = 'Analysis completed successfully, but response format was unexpected.';
     }
 
-    return new Response(JSON.stringify({ 
+    if (!responseText || responseText.trim().length === 0) {
+      console.error('Empty response from Hugging Face API');
+      responseText = 'Analysis completed but no detailed response was generated. Please try again.';
+    }
+
+    const result = { 
       response: responseText,
       document_id: `hf-${Date.now()}` // Generate a unique document ID
-    }), {
+    };
+    
+    console.log('Sending final response:', { 
+      responseLength: result.response.length,
+      documentId: result.document_id 
+    });
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in insurance-analysis-hf:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error in insurance-analysis-hf function:', error);
+    console.error('Error stack:', error.stack);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: 'Check function logs for more information'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
