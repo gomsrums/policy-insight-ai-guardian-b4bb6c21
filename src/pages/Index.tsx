@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
@@ -154,23 +153,25 @@ Policy Period: January 1, 2024 to January 1, 2025
       let errorMessage = "There was an error analyzing your document. Please try again.";
       
       if (error instanceof Error) {
-        // Handle ChatPDF specific errors
+        console.log("Error message:", error.message);
+        
+        // Handle ChatPDF specific errors with more detailed messages
         if (error.message.includes("authentication failed") || error.message.includes("401")) {
-          errorMessage = "ChatPDF API authentication failed. Please verify the API key is correct.";
-        } else if (error.message.includes("rate limit")) {
-          errorMessage = "ChatPDF API rate limit exceeded. Please wait a moment and try again.";
+          errorMessage = "❌ ChatPDF API authentication failed. The API key may be invalid, expired, or lack proper permissions. Please check the API key configuration.";
+        } else if (error.message.includes("rate limit") || error.message.includes("429")) {
+          errorMessage = "⏳ ChatPDF API rate limit exceeded. Please wait a moment and try again.";
         } else if (error.message.includes("file too large") || error.message.includes("413")) {
-          errorMessage = "File is too large for ChatPDF. Please try a smaller file.";
+          errorMessage = "📄 File is too large for ChatPDF. Please try a smaller file (max 32MB).";
         } else if (error.message.includes("network") || error.message.includes("fetch")) {
-          errorMessage = "Network error. Please check your internet connection and try again.";
+          errorMessage = "🌐 Network error. Please check your internet connection and try again.";
         } else if (error.message.includes("Invalid analysis result")) {
-          errorMessage = "ChatPDF returned an invalid response. Please try again.";
+          errorMessage = "⚠️ ChatPDF returned an invalid response. Please try again.";
         } else if (error.message.includes("No source ID")) {
-          errorMessage = "ChatPDF failed to process the document. Please try again.";
+          errorMessage = "🔍 ChatPDF failed to process the document. Please try again.";
         } else if (error.message.includes("No content returned")) {
-          errorMessage = "ChatPDF did not return analysis content. Please try again.";
+          errorMessage = "📝 ChatPDF did not return analysis content. Please try again.";
         } else {
-          errorMessage = `ChatPDF Error: ${error.message}`;
+          errorMessage = `🤖 ChatPDF Error: ${error.message}`;
         }
       }
       
@@ -208,9 +209,9 @@ Policy Period: January 1, 2024 to January 1, 2025
       
       if (error instanceof Error) {
         if (error.message.includes("authentication failed") || error.message.includes("401")) {
-          return "ChatPDF API authentication failed. Please check the API configuration.";
+          return "❌ ChatPDF API authentication failed. Please check the API configuration.";
         } else {
-          return `ChatPDF Error: ${error.message}`;
+          return `🤖 ChatPDF Error: ${error.message}`;
         }
       }
       

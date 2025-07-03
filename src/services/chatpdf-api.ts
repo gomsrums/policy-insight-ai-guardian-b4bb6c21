@@ -6,6 +6,7 @@ const CHATPDF_BASE_URL = "https://api.chatpdf.com/v1";
 export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promise<AnalysisResult> => {
   try {
     console.log("Uploading document to ChatPDF:", document.name);
+    console.log("Using API key:", CHATPDF_API_KEY.substring(0, 15) + "...");
     
     // Validate API key
     if (!CHATPDF_API_KEY) {
@@ -24,7 +25,7 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       throw new Error("No file or content available for analysis");
     }
 
-    console.log("Making upload request to ChatPDF with API key:", CHATPDF_API_KEY.substring(0, 10) + "...");
+    console.log("Making upload request to ChatPDF...");
 
     const uploadResponse = await fetch(`${CHATPDF_BASE_URL}/sources/add-file`, {
       method: "POST",
@@ -39,38 +40,38 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error("ChatPDF upload error:", errorText);
+      console.error("ChatPDF upload error response:", errorText);
       
-      // Parse error response if it's JSON
-      let errorMessage = errorText;
+      // Try to parse JSON error response
+      let errorData;
       try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
+        errorData = JSON.parse(errorText);
+        console.error("Parsed error data:", errorData);
       } catch (e) {
-        // Keep original error text if not JSON
+        console.error("Could not parse error response as JSON");
       }
       
       // Handle specific error cases
       if (uploadResponse.status === 401) {
-        throw new Error(`ChatPDF API authentication failed: ${errorMessage}`);
+        throw new Error(`ChatPDF API authentication failed. Status: ${uploadResponse.status}. Response: ${errorText}`);
       } else if (uploadResponse.status === 429) {
         throw new Error("ChatPDF API rate limit exceeded. Please try again later.");
       } else if (uploadResponse.status === 413) {
         throw new Error("File too large for ChatPDF API. Please try a smaller file.");
       } else {
-        throw new Error(`ChatPDF upload failed (${uploadResponse.status}): ${errorMessage}`);
+        throw new Error(`ChatPDF upload failed (${uploadResponse.status}): ${errorText}`);
       }
     }
 
     const uploadData = await uploadResponse.json();
-    console.log("ChatPDF upload response:", uploadData);
+    console.log("ChatPDF upload response data:", uploadData);
     const sourceId = uploadData.sourceId;
 
     if (!sourceId) {
       throw new Error("No source ID returned from ChatPDF upload");
     }
 
-    // Step 2: Comprehensive analysis with a detailed prompt
+    // Step 2: Send analysis request
     const comprehensivePrompt = `
     Please analyze this insurance policy document thoroughly and provide a comprehensive report with the following sections:
 
@@ -108,26 +109,17 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
 
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text();
-      console.error("ChatPDF analysis error:", errorText);
-      
-      // Parse error response if it's JSON
-      let errorMessage = errorText;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
-      } catch (e) {
-        // Keep original error text if not JSON
-      }
+      console.error("ChatPDF analysis error response:", errorText);
       
       if (analysisResponse.status === 401) {
-        throw new Error(`ChatPDF API authentication failed during analysis: ${errorMessage}`);
+        throw new Error(`ChatPDF API authentication failed during analysis. Status: ${analysisResponse.status}. Response: ${errorText}`);
       } else {
-        throw new Error(`ChatPDF analysis failed (${analysisResponse.status}): ${errorMessage}`);
+        throw new Error(`ChatPDF analysis failed (${analysisResponse.status}): ${errorText}`);
       }
     }
 
     const analysisData = await analysisResponse.json();
-    console.log("ChatPDF analysis response:", analysisData);
+    console.log("ChatPDF analysis response data:", analysisData);
 
     if (!analysisData.content) {
       throw new Error("No content returned from ChatPDF analysis");
@@ -170,8 +162,8 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     if (error instanceof Error) {
       if (error.message.includes("fetch")) {
         throw new Error("Network error: Unable to connect to ChatPDF. Please check your internet connection.");
-      } else if (error.message.includes("401")) {
-        throw new Error("ChatPDF API authentication failed. The API key may be invalid or expired.");
+      } else if (error.message.includes("401") || error.message.includes("authentication")) {
+        throw new Error("ChatPDF API authentication failed. Please verify the API key is correct and has proper permissions.");
       } else {
         throw error;
       }
@@ -224,6 +216,7 @@ const determineRiskLevel = (text: string): "Low" | "Medium" | "High" => {
 export const sendChatMessage = async (documentId: string, question: string): Promise<string> => {
   try {
     console.log("Sending chat message to ChatPDF for document:", documentId);
+    console.log("Using API key:", CHATPDF_API_KEY.substring(0, 15) + "...");
 
     if (!CHATPDF_API_KEY) {
       throw new Error("ChatPDF API key is not configured");
@@ -250,26 +243,17 @@ export const sendChatMessage = async (documentId: string, question: string): Pro
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("ChatPDF chat error:", errorText);
-      
-      // Parse error response if it's JSON
-      let errorMessage = errorText;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
-      } catch (e) {
-        // Keep original error text if not JSON
-      }
+      console.error("ChatPDF chat error response:", errorText);
       
       if (response.status === 401) {
-        throw new Error(`ChatPDF API authentication failed: ${errorMessage}`);
+        throw new Error(`ChatPDF API authentication failed during chat. Status: ${response.status}. Response: ${errorText}`);
       } else {
-        throw new Error(`ChatPDF chat failed (${response.status}): ${errorMessage}`);
+        throw new Error(`ChatPDF chat failed (${response.status}): ${errorText}`);
       }
     }
     
     const data = await response.json();
-    console.log("ChatPDF chat response:", data);
+    console.log("ChatPDF chat response data:", data);
     return data.content || "No response received from ChatPDF.";
   } catch (error) {
     console.error("Error sending chat message to ChatPDF:", error);
