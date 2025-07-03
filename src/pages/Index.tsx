@@ -154,18 +154,23 @@ Policy Period: January 1, 2024 to January 1, 2025
       let errorMessage = "There was an error analyzing your document. Please try again.";
       
       if (error instanceof Error) {
-        if (error.message.includes("authentication") || error.message.includes("401")) {
-          errorMessage = "Authentication failed with ChatPDF. Please check the API configuration.";
+        // Handle ChatPDF specific errors
+        if (error.message.includes("authentication failed") || error.message.includes("401")) {
+          errorMessage = "ChatPDF API authentication failed. Please verify the API key is correct.";
         } else if (error.message.includes("rate limit")) {
-          errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
-        } else if (error.message.includes("file too large")) {
-          errorMessage = "File is too large. Please try a smaller file.";
+          errorMessage = "ChatPDF API rate limit exceeded. Please wait a moment and try again.";
+        } else if (error.message.includes("file too large") || error.message.includes("413")) {
+          errorMessage = "File is too large for ChatPDF. Please try a smaller file.";
         } else if (error.message.includes("network") || error.message.includes("fetch")) {
           errorMessage = "Network error. Please check your internet connection and try again.";
         } else if (error.message.includes("Invalid analysis result")) {
           errorMessage = "ChatPDF returned an invalid response. Please try again.";
+        } else if (error.message.includes("No source ID")) {
+          errorMessage = "ChatPDF failed to process the document. Please try again.";
+        } else if (error.message.includes("No content returned")) {
+          errorMessage = "ChatPDF did not return analysis content. Please try again.";
         } else {
-          errorMessage = error.message;
+          errorMessage = `ChatPDF Error: ${error.message}`;
         }
       }
       
@@ -202,10 +207,10 @@ Policy Period: January 1, 2024 to January 1, 2025
       console.error("Error sending message:", error);
       
       if (error instanceof Error) {
-        if (error.message.includes("authentication") || error.message.includes("401")) {
-          return "Authentication failed with ChatPDF. Please check the API configuration.";
+        if (error.message.includes("authentication failed") || error.message.includes("401")) {
+          return "ChatPDF API authentication failed. Please check the API configuration.";
         } else {
-          return error.message;
+          return `ChatPDF Error: ${error.message}`;
         }
       }
       
