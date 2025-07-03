@@ -1,15 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
-import FileUploader from "@/components/FileUploader";
-import TextInput from "@/components/TextInput";
-import DocumentPreview from "@/components/DocumentPreview";
-import ChatInterface from "@/components/ChatInterface";
+import HeroSection from "@/components/HeroSection";
+import DocumentUploadSection from "@/components/DocumentUploadSection";
+import AnalysisResultsSection from "@/components/AnalysisResultsSection";
+import FooterSection from "@/components/FooterSection";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/huggingface-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
@@ -200,356 +196,36 @@ Policy Period: January 1, 2024 to January 1, 2025
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
       <Header />
       
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary/5 to-primary/10 py-12 md:py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <span>🛡️</span>
-              Trusted by 10,000+ Policy Holders
-            </div>
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
-              AI-Powered Insurance Analysis
-              <span className="block text-primary">Get Comprehensive Insights</span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Upload your insurance policy document to get detailed analysis including coverage gaps, risk assessment, and personalized recommendations
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Indicators */}
-      <section className="py-8 bg-background border-b">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-            <div className="flex items-center gap-2">
-              <span className="text-green-600">🔒</span>
-              <span className="text-sm font-medium">GDPR Compliant</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-blue-600">🛡️</span>
-              <span className="text-sm font-medium">Secure Processing</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-purple-600">⚡</span>
-              <span className="text-sm font-medium">AI-Powered Chat</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-orange-600">🏆</span>
-              <span className="text-sm font-medium">Industry Standard</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSection onUseSampleText={handleUseSampleText} />
 
       <main className="container mx-auto py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <div className="lg:col-span-1 space-y-6">
-              <Card className="shadow-lg border-0 bg-card">
-                <CardContent className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-foreground mb-2">
-                      Upload Your Policy
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Get comprehensive AI analysis and chat capabilities
-                    </p>
-                  </div>
-                  
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6">
-                      <TabsTrigger value="file" className="text-sm">📄 Upload PDF</TabsTrigger>
-                      <TabsTrigger value="text" className="text-sm">📝 Paste Text</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="file" className="space-y-6">
-                      <FileUploader onFileAdded={handleFileAdded} />
-                      
-                      {documents.length > 0 && activeTab === "file" && (
-                        <div className="space-y-4">
-                          <div className="p-4 bg-muted/50 rounded-lg">
-                            <h4 className="font-medium mb-3 text-sm">Uploaded Document</h4>
-                            <DocumentPreview 
-                              document={documents[0]} 
-                              onRemove={handleRemoveDocument} 
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </TabsContent>
-                    
-                    <TabsContent value="text">
-                      <TextInput onTextAdded={handleTextAdded} />
-                    </TabsContent>
-                  </Tabs>
-
-                  {/* Features List */}
-                  <div className="mt-6 pt-6 border-t">
-                    <h4 className="font-medium text-sm mb-3 text-muted-foreground uppercase tracking-wide">
-                      What You Get
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-green-600">✓</span>
-                        <span>Coverage Gap Analysis</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-green-600">✓</span>
-                        <span>Risk Assessment</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-green-600">✓</span>
-                        <span>Policy Insights</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-green-600">✓</span>
-                        <span>Interactive Chat</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <DocumentUploadSection
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                documents={documents}
+                onFileAdded={handleFileAdded}
+                onTextAdded={handleTextAdded}
+                onRemoveDocument={handleRemoveDocument}
+              />
             </div>
             
             <div className="lg:col-span-2">
-              <Card className="h-full shadow-lg border-0 bg-card">
-                <CardContent className="p-6">
-                  {!analysisResult && !isAnalyzing && (
-                    <div className="text-center py-16">
-                      <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="text-4xl">🤖</span>
-                      </div>
-                      <h3 className="text-xl font-semibold text-foreground mb-4">
-                        Ready for AI Analysis
-                      </h3>
-                      <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                        Upload your insurance policy to get comprehensive AI-powered analysis and chat capabilities
-                      </p>
-                      <Button 
-                        variant="outline"
-                        onClick={handleUseSampleText}
-                      >
-                        Try Sample Policy
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {isAnalyzing && (
-                    <div className="space-y-6">
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-foreground mb-2">
-                          Analyzing Your Policy
-                        </h3>
-                        <p className="text-muted-foreground">
-                          Our AI is analyzing your policy for comprehensive insights...
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {analysisResult && !isAnalyzing && (
-                    <Tabs defaultValue="summary" className="w-full">
-                      <TabsList className="grid w-full grid-cols-4 mb-6">
-                        <TabsTrigger value="summary">📋 Summary</TabsTrigger>
-                        <TabsTrigger value="gaps">⚠️ Coverage Gaps</TabsTrigger>
-                        <TabsTrigger value="insights">💡 Insights</TabsTrigger>
-                        <TabsTrigger value="chat">💬 Chat</TabsTrigger>
-                      </TabsList>
-                      
-                      <TabsContent value="summary" className="space-y-6">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">📋 Policy Summary</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysisResult.summary}</p>
-                          </CardContent>
-                        </Card>
-                        
-                        {analysisResult.risk_assessment && (
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="text-lg">🎯 Risk Assessment</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">Risk Level:</span>
-                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                    analysisResult.risk_assessment?.overall_risk_level === 'High' ? 'bg-red-100 text-red-800' :
-                                    analysisResult.risk_assessment?.overall_risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-green-100 text-green-800'
-                                  }`}>
-                                    {analysisResult.risk_assessment?.overall_risk_level || 'Medium'}
-                                  </span>
-                                </div>
-                                {analysisResult.risk_assessment?.risk_factors && analysisResult.risk_assessment.risk_factors.length > 0 && (
-                                  <div>
-                                    <p className="text-sm font-medium mb-2">Risk Factors:</p>
-                                    <ul className="space-y-1">
-                                      {analysisResult.risk_assessment.risk_factors.map((factor, index) => (
-                                        <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                                          <span className="text-red-500 mt-1">•</span>
-                                          {factor}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-                      </TabsContent>
-                      
-                      <TabsContent value="gaps" className="space-y-6">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">⚠️ Coverage Gaps</CardTitle>
-                            <CardDescription>
-                              Areas where your policy may have limited or no coverage
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            {analysisResult.gaps && analysisResult.gaps.length > 0 ? (
-                              <ul className="space-y-2">
-                                {analysisResult.gaps.map((gap, index) => (
-                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                                    <span className="text-orange-500 mt-1">•</span>
-                                    {gap}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">No significant coverage gaps identified in your policy.</p>
-                            )}
-                          </CardContent>
-                        </Card>
-                        
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">💡 Recommendations</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            {analysisResult.recommendations && analysisResult.recommendations.length > 0 ? (
-                              <ul className="space-y-2">
-                                {analysisResult.recommendations.map((rec, index) => (
-                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                                    <span className="text-blue-500 mt-1">•</span>
-                                    {rec}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">Your policy appears to have comprehensive coverage.</p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-                      
-                      <TabsContent value="insights" className="space-y-6">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">💡 Key Insights</CardTitle>
-                            <CardDescription>
-                              Important observations about your policy
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                                <h4 className="font-medium text-blue-900 mb-2">Policy Strengths</h4>
-                                <p className="text-sm text-blue-800">
-                                  Your policy includes comprehensive coverage with industry-standard protections.
-                                </p>
-                              </div>
-                              
-                              {analysisResult.gaps && analysisResult.gaps.length > 0 && (
-                                <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
-                                  <h4 className="font-medium text-orange-900 mb-2">Areas for Improvement</h4>
-                                  <p className="text-sm text-orange-800">
-                                    Consider reviewing the identified coverage gaps to ensure complete protection.
-                                  </p>
-                                </div>
-                              )}
-                              
-                              <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
-                                <h4 className="font-medium text-green-900 mb-2">Next Steps</h4>
-                                <p className="text-sm text-green-800">
-                                  Schedule an annual policy review with your agent to ensure coverage remains adequate.
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-                      
-                      <TabsContent value="chat" className="h-[calc(100vh-500px)] min-h-[500px]">
-                        <ChatInterface 
-                          sourceId={analysisResult?.document_id ?? null}
-                          onSendMessage={handleSendMessage}
-                          isLoading={isChatting}
-                        />
-                      </TabsContent>
-                    </Tabs>
-                  )}
-                </CardContent>
-              </Card>
+              <AnalysisResultsSection
+                analysisResult={analysisResult}
+                isAnalyzing={isAnalyzing}
+                isChatting={isChatting}
+                onUseSampleText={handleUseSampleText}
+                onSendMessage={handleSendMessage}
+              />
             </div>
           </div>
         </div>
       </main>
       
-      {/* Footer with Trust & Compliance */}
-      <footer className="mt-16 py-12 border-t bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Trust & Security</h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-600">🔒</span>
-                  <span>GDPR Compliant Data Processing</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">🛡️</span>
-                  <span>Secure SSL Encryption</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-purple-600">🗑️</span>
-                  <span>Automatic Data Deletion</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">AI-Powered Analysis</h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div>📊 Comprehensive Policy Analysis</div>
-                <div>⚠️ Coverage Gap Detection</div>
-                <div>💡 Personalized Insights</div>
-                <div>💬 Interactive Chat Support</div>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Disclaimer</h4>
-              <p className="text-sm text-muted-foreground">
-                This AI-powered analysis is for informational purposes only. 
-                Always consult with a licensed insurance professional before making policy decisions.
-              </p>
-            </div>
-          </div>
-          <div className="text-center pt-8 border-t">
-            <p className="text-muted-foreground text-sm">
-              © {new Date().getFullYear()} Insurance Policy Analysis. Powered by advanced AI technology.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <FooterSection />
     </div>
   );
 };
