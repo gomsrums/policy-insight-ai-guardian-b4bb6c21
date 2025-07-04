@@ -72,22 +72,79 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       throw new Error("No source ID returned from ChatPDF upload");
     }
 
-    // Step 2: Send analysis request
-    const comprehensivePrompt = `
-    Please analyze this insurance policy document thoroughly and provide a comprehensive report with the following sections:
+    // Step 2: Generate structured summary
+    const summaryPrompt = `
+    Please provide a comprehensive summary of this insurance policy document in the following structured format:
 
-    1. POLICY SUMMARY: Describe the main coverage areas, policy limits, deductibles, and key features
-    2. COVERAGE ANALYSIS: List what is covered in detail and identify any coverage gaps or limitations
-    3. RISK ASSESSMENT: Evaluate the overall risk level (Low/Medium/High) and identify specific risk factors
-    4. POSITIVE ASPECTS: Highlight the strengths, comprehensive coverage areas, and benefits of this policy
-    5. NEGATIVE ASPECTS OR GAPS: Identify weaknesses, coverage gaps, exclusions, or areas of concern
-    6. RECOMMENDATIONS: Suggest improvements, additional coverage, or modifications that should be considered
+    Start with: "The policy document contains the insurance policy details for [type of insurance/vehicle] (Policy No. [policy number]) issued by [insurance company]. It includes the following key information:"
 
-    Please format your response clearly with numbered sections and provide specific details for each area.
-    Be thorough in identifying both positive and negative aspects of the policy.
+    Then provide a numbered list of key aspects:
+    1. **Policy Period**: [Coverage dates and duration]
+    2. **Insured Item/Vehicle**: [Details about what's insured - make, model, specifications]
+    3. **Premium Amount**: [Total premium and breakdown if available]
+    4. **Special Benefits**: [Any bonuses, discounts, or special features like No Claim Bonus]
+    5. **Coverage Limitations**: [Important limitations, exclusions, or restrictions]
+    6. **Requirements**: [Driver requirements, conditions, or prerequisites]
+    7. **Contact Information**: [Customer service details if available]
+
+    End with: "Overall, the document serves as a certificate of insurance and policy schedule, detailing the terms, conditions, and coverage of the insurance policy."
+
+    Please extract the actual details from the document and format them according to this structure. If any section is not applicable or information is not available, adapt accordingly but maintain the structured format.
     `;
 
-    console.log("Sending comprehensive analysis request to ChatPDF...");
+    console.log("Sending summary request to ChatPDF...");
+
+    const summaryResponse = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
+      method: "POST",
+      headers: {
+        "x-api-key": CHATPDF_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sourceId: sourceId,
+        messages: [
+          {
+            role: "user",
+            content: summaryPrompt,
+          },
+        ],
+      }),
+    });
+
+    console.log("Summary response status:", summaryResponse.status);
+
+    if (!summaryResponse.ok) {
+      const errorText = await summaryResponse.text();
+      console.error("ChatPDF summary error response:", errorText);
+      
+      if (summaryResponse.status === 401) {
+        throw new Error(`ChatPDF API authentication failed during summary. Status: ${summaryResponse.status}. Response: ${errorText}`);
+      } else {
+        throw new Error(`ChatPDF summary failed (${summaryResponse.status}): ${errorText}`);
+      }
+    }
+
+    const summaryData = await summaryResponse.json();
+    console.log("ChatPDF summary response data:", summaryData);
+
+    if (!summaryData.content) {
+      throw new Error("No summary content returned from ChatPDF");
+    }
+
+    const structuredSummary = summaryData.content;
+
+    // Step 3: Send comprehensive analysis request for gaps and recommendations
+    const analysisPrompt = `
+    Based on this insurance policy document, please provide:
+
+    1. COVERAGE GAPS: List specific areas where coverage may be limited or missing
+    2. RISK ASSESSMENT: Evaluate the overall risk level (Low/Medium/High) and identify specific risk factors
+    3. RECOMMENDATIONS: Suggest improvements, additional coverage, or modifications
+
+    Format your response with clear sections and bullet points for each area.
+    `;
+
+    console.log("Sending analysis request to ChatPDF...");
 
     const analysisResponse = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
       method: "POST",
@@ -100,7 +157,7 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
         messages: [
           {
             role: "user",
-            content: comprehensivePrompt,
+            content: analysisPrompt,
           },
         ],
       }),
@@ -126,11 +183,8 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       throw new Error("No content returned from ChatPDF analysis");
     }
 
-    // Step 3: Parse the comprehensive response
+    // Step 4: Process the analysis results
     const fullAnalysis = analysisData.content;
-    
-    // Extract summary from the first section
-    const summary = fullAnalysis.substring(0, 500).replace(/\n/g, ' ').trim() + "...";
     
     // Extract gaps and recommendations from the response
     const gaps = extractListItems(fullAnalysis, ['gap', 'missing', 'not covered', 'limitation', 'weakness', 'exclusion']);
@@ -141,7 +195,7 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     const riskFactors = extractListItems(fullAnalysis, ['risk', 'concern', 'problem', 'issue', 'vulnerable']);
 
     const analysisResult: AnalysisResult = {
-      summary: summary,
+      summary: structuredSummary, // Use the full structured summary
       gaps: gaps,
       overpayments: [], // ChatPDF doesn't provide overpayment analysis
       recommendations: recommendations,
@@ -223,6 +277,27 @@ export const sendChatMessage = async (documentId: string, question: string): Pro
       throw new Error("ChatPDF API key is not configured");
     }
 
+    // Enhance the question with formatting instructions if it's asking for a summary
+    let enhancedQuestion = question;
+    if (question.toLowerCase().includes('summary') || question.toLowerCase().includes('summarize')) {
+      enhancedQuestion = `${question}
+
+Please provide the response in this structured format:
+
+Start with: "The policy document contains the insurance policy details for [type] (Policy No. [number]) issued by [company]. It includes the following key information:"
+
+Then provide numbered key points:
+1. **Policy Period**: [dates and duration]
+2. **Insured Item**: [details about what's insured]
+3. **Premium Amount**: [total and breakdown]
+4. **Special Benefits**: [bonuses, discounts, features]
+5. **Coverage Limitations**: [restrictions, exclusions]
+6. **Requirements**: [conditions, prerequisites]
+7. **Contact Information**: [customer service details]
+
+End with: "Overall, the document serves as a certificate of insurance and policy schedule, detailing the terms, conditions, and coverage of the insurance policy."`;
+    }
+
     const response = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
       method: "POST",
       headers: {
@@ -234,7 +309,7 @@ export const sendChatMessage = async (documentId: string, question: string): Pro
         messages: [
           {
             role: "user",
-            content: question,
+            content: enhancedQuestion,
           },
         ],
       }),
