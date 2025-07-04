@@ -92,7 +92,7 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
     Please extract the actual details from the document and format them according to this structure. If any section is not applicable or information is not available, adapt accordingly but maintain the structured format.
 
     IMPORTANT FORMATTING RULES:
-    - Do NOT use ** for bold formatting
+    - Do NOT use bold formatting or special symbols
     - Use plain text only
     - Add proper line spacing between sections
     - Keep the numbered format simple without extra symbols
@@ -139,35 +139,39 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
 
     const structuredSummary = summaryData.content;
 
-    // Step 3: Send comprehensive analysis request for gaps and recommendations
-    const analysisPrompt = `
-    Based on this insurance policy document, please analyze and provide coverage gaps and recommendations in the following format:
+    // Step 3: Send comprehensive coverage gap analysis request
+    const coverageGapPrompt = `
+    Based on this insurance policy document, please analyze and identify all coverage gaps, limitations, and exclusions. Provide your response in the following exact format:
 
-    Start with: "The insurance policy document outlines several limitations and exclusions regarding coverage. Here are the key coverage gaps:"
+    Start with: "Areas where your policy may have limited or no coverage"
 
-    Then provide a numbered list for coverage gaps with proper formatting:
-    1. Gap Title: Description
-       - Sub-point if needed
-       - Another sub-point if needed
+    Then list each gap as a bullet point using this format:
+    • [Gap Title]: [Detailed description of the limitation or exclusion] - [Impact or consequence of this gap]
 
-    2. Next Gap Title: Description
-       - Sub-points as needed
-
-    After coverage gaps, provide recommendations in a similar format.
+    Focus on identifying:
+    - Underinsurance clauses and their implications
+    - Time limits for claims and notifications
+    - Fraudulent claims consequences
+    - Coverage exclusions and limitations
+    - Deductibles and their impact
+    - Disclosure requirements
+    - Inspection requirements
+    - Other insurance policy requirements
+    - Specific coverage limits and caps
 
     CRITICAL FORMATTING REQUIREMENTS:
-    - Do NOT use ** for bold formatting anywhere
-    - Do NOT use # symbols
+    - Use bullet points (•) for each gap
+    - Do NOT use numbered lists
+    - Do NOT use bold formatting or special symbols
     - Use plain text only
-    - Add proper line spacing between each numbered item
-    - Use simple numbered format (1., 2., 3., etc.)
-    - Use simple dash (-) for sub-points
-    - Make sure there are line breaks between sections for better readability
+    - Add proper line spacing between each bullet point
+    - Follow the exact format: • [Title]: [Description] - [Impact]
+    - Make sure there are line breaks between items for better readability
     `;
 
-    console.log("Sending analysis request to ChatPDF...");
+    console.log("Sending coverage gap analysis request to ChatPDF...");
 
-    const analysisResponse = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
+    const gapAnalysisResponse = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
       method: "POST",
       headers: {
         "x-api-key": CHATPDF_API_KEY,
@@ -178,45 +182,111 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
         messages: [
           {
             role: "user",
-            content: analysisPrompt,
+            content: coverageGapPrompt,
           },
         ],
       }),
     });
 
-    console.log("Analysis response status:", analysisResponse.status);
+    console.log("Coverage gap analysis response status:", gapAnalysisResponse.status);
 
-    if (!analysisResponse.ok) {
-      const errorText = await analysisResponse.text();
-      console.error("ChatPDF analysis error response:", errorText);
+    if (!gapAnalysisResponse.ok) {
+      const errorText = await gapAnalysisResponse.text();
+      console.error("ChatPDF coverage gap analysis error response:", errorText);
       
-      if (analysisResponse.status === 401) {
-        throw new Error(`ChatPDF API authentication failed during analysis. Status: ${analysisResponse.status}. Response: ${errorText}`);
+      if (gapAnalysisResponse.status === 401) {
+        throw new Error(`ChatPDF API authentication failed during gap analysis. Status: ${gapAnalysisResponse.status}. Response: ${errorText}`);
       } else {
-        throw new Error(`ChatPDF analysis failed (${analysisResponse.status}): ${errorText}`);
+        throw new Error(`ChatPDF coverage gap analysis failed (${gapAnalysisResponse.status}): ${errorText}`);
       }
     }
 
-    const analysisData = await analysisResponse.json();
-    console.log("ChatPDF analysis response data:", analysisData);
+    const gapAnalysisData = await gapAnalysisResponse.json();
+    console.log("ChatPDF coverage gap analysis response data:", gapAnalysisData);
 
-    if (!analysisData.content) {
-      throw new Error("No content returned from ChatPDF analysis");
+    if (!gapAnalysisData.content) {
+      throw new Error("No content returned from ChatPDF coverage gap analysis");
     }
 
-    // Step 4: Process the analysis results
-    const fullAnalysis = analysisData.content;
+    // Step 4: Send recommendations analysis request  
+    const recommendationsPrompt = `
+    Based on the coverage gaps and limitations identified in this insurance policy, please provide specific recommendations to address these issues. Format your response as:
+
+    Start with: "Recommendations to address coverage gaps:"
+
+    Then list each recommendation as a bullet point:
+    • [Recommendation Title]: [Detailed actionable advice] - [Benefit or reason for this recommendation]
+
+    Focus on providing actionable recommendations such as:
+    - Regular coverage reviews and assessments
+    - Record keeping best practices
+    - Claims submission processes
+    - Additional coverage options
+    - Risk mitigation strategies
+
+    FORMATTING REQUIREMENTS:
+    - Use bullet points (•) for each recommendation
+    - Do NOT use numbered lists
+    - Do NOT use bold formatting or special symbols
+    - Use plain text only
+    - Add proper line spacing between each bullet point
+    - Follow the format: • [Title]: [Description] - [Benefit]
+    `;
+
+    console.log("Sending recommendations request to ChatPDF...");
+
+    const recommendationsResponse = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
+      method: "POST",
+      headers: {
+        "x-api-key": CHATPDF_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sourceId: sourceId,
+        messages: [
+          {
+            role: "user",
+            content: recommendationsPrompt,
+          },
+        ],
+      }),
+    });
+
+    console.log("Recommendations response status:", recommendationsResponse.status);
+
+    if (!recommendationsResponse.ok) {
+      const errorText = await recommendationsResponse.text();
+      console.error("ChatPDF recommendations error response:", errorText);
+      
+      if (recommendationsResponse.status === 401) {
+        throw new Error(`ChatPDF API authentication failed during recommendations. Status: ${recommendationsResponse.status}. Response: ${errorText}`);
+      } else {
+        throw new Error(`ChatPDF recommendations failed (${recommendationsResponse.status}): ${errorText}`);
+      }
+    }
+
+    const recommendationsData = await recommendationsResponse.json();
+    console.log("ChatPDF recommendations response data:", recommendationsData);
+
+    if (!recommendationsData.content) {
+      throw new Error("No content returned from ChatPDF recommendations");
+    }
+
+    // Step 5: Process the analysis results
+    const coverageGapAnalysis = gapAnalysisData.content;
+    const recommendationsAnalysis = recommendationsData.content;
     
     // Clean and format the analysis text
-    const cleanedAnalysis = cleanFormattingFromText(fullAnalysis);
+    const cleanedGapAnalysis = cleanFormattingFromText(coverageGapAnalysis);
+    const cleanedRecommendations = cleanFormattingFromText(recommendationsAnalysis);
     
     // Extract gaps and recommendations from the cleaned response
-    const gaps = extractFormattedListItems(cleanedAnalysis, ['gap', 'limitation', 'exclusion', 'not cover']);
-    const recommendations = extractFormattedListItems(cleanedAnalysis, ['recommend', 'suggest', 'consider', 'should', 'improve']);
+    const gaps = extractBulletPoints(cleanedGapAnalysis);
+    const recommendations = extractBulletPoints(cleanedRecommendations);
     
-    // Determine risk level
-    const riskLevel = determineRiskLevel(fullAnalysis);
-    const riskFactors = extractFormattedListItems(cleanedAnalysis, ['risk', 'concern', 'problem', 'issue']);
+    // Determine risk level based on number and severity of gaps
+    const riskLevel = determineRiskLevel(cleanedGapAnalysis);
+    const riskFactors = extractRiskFactors(cleanedGapAnalysis);
 
     const analysisResult: AnalysisResult = {
       summary: cleanFormattingFromText(structuredSummary),
@@ -256,57 +326,78 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
 const cleanFormattingFromText = (text: string): string => {
   return text
     .replace(/\*\*/g, '') // Remove ** bold formatting
+    .replace(/\*/g, '') // Remove * formatting
     .replace(/#{1,6}\s*/g, '') // Remove # heading symbols
     .replace(/\n{3,}/g, '\n\n') // Normalize excessive line breaks to double
     .trim();
 };
 
-// Helper function to extract formatted list items from text
-const extractFormattedListItems = (text: string, keywords: string[]): string[] => {
+// Helper function to extract bullet points from text
+const extractBulletPoints = (text: string): string[] => {
   const lines = text.split('\n');
-  const items: string[] = [];
+  const bulletPoints: string[] = [];
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     
-    // Look for numbered items (1., 2., etc.) or bullet points
-    if (line.match(/^\d+\.\s/) || line.match(/^[•\-\*]\s/)) {
-      let fullItem = line.replace(/^\d+\.\s*/, '').replace(/^[•\-\*]\s*/, '');
+    // Look for bullet points (•) or similar markers
+    if (line.match(/^[•\-\*]\s/) || line.match(/^\d+\.\s/)) {
+      let fullPoint = line.replace(/^[•\-\*]\s*/, '').replace(/^\d+\.\s*/, '');
       
-      // Check if next lines are sub-points (indented or start with -)
+      // Check if next lines are continuation of this point (indented)
       let j = i + 1;
-      while (j < lines.length && lines[j].trim().startsWith('-')) {
-        fullItem += '\n' + lines[j].trim();
+      while (j < lines.length && lines[j].trim() && !lines[j].trim().match(/^[•\-\*]\s/) && !lines[j].trim().match(/^\d+\.\s/)) {
+        if (lines[j].trim().startsWith('-') || lines[j].trim().length > 0) {
+          fullPoint += ' ' + lines[j].trim();
+        }
         j++;
       }
       
-      // Only include if it contains relevant keywords or is a substantial item
-      if (keywords.some(keyword => fullItem.toLowerCase().includes(keyword)) || fullItem.length > 20) {
-        items.push(fullItem);
+      if (fullPoint.length > 10) { // Only include substantial points
+        bulletPoints.push(fullPoint);
       }
       
-      i = j - 1; // Skip processed sub-items
+      i = j - 1; // Skip processed lines
     }
   }
   
-  return items.slice(0, 8); // Limit to 8 items
+  return bulletPoints.slice(0, 10); // Limit to 10 items
+};
+
+// Helper function to extract risk factors
+const extractRiskFactors = (text: string): string[] => {
+  const riskKeywords = ['risk', 'limitation', 'exclusion', 'gap', 'underinsurance', 'deductible', 'time limit'];
+  const lines = text.split('\n');
+  const riskFactors: string[] = [];
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.match(/^[•\-\*]\s/) && riskKeywords.some(keyword => 
+      trimmedLine.toLowerCase().includes(keyword))) {
+      const factor = trimmedLine.replace(/^[•\-\*]\s*/, '').split(':')[0];
+      if (factor.length > 5) {
+        riskFactors.push(factor);
+      }
+    }
+  }
+  
+  return riskFactors.slice(0, 5); // Limit to 5 risk factors
 };
 
 // Helper function to determine risk level
 const determineRiskLevel = (text: string): "Low" | "Medium" | "High" => {
   const lowerText = text.toLowerCase();
   
-  const highRiskIndicators = ['high risk', 'significant risk', 'major concern', 'critical gap', 'serious limitation'];
-  const mediumRiskIndicators = ['medium risk', 'moderate risk', 'some concern', 'gaps identified', 'minor issues'];
-  const lowRiskIndicators = ['low risk', 'minimal risk', 'well covered', 'comprehensive', 'adequate coverage'];
+  // Count risk indicators
+  const highRiskCount = (lowerText.match(/underinsurance|fraudulent|time limit|exclusion|limitation|deductible/g) || []).length;
   
-  if (highRiskIndicators.some(indicator => lowerText.includes(indicator))) {
+  if (highRiskCount >= 5) {
     return "High";
-  } else if (lowRiskIndicators.some(indicator => lowerText.includes(indicator))) {
-    return "Low";
+  } else if (highRiskCount >= 3) {
+    return "Medium";
   }
   
-  return "Medium"; // Default to Medium if unclear
+  return "Low";
 };
 
 export const sendChatMessage = async (documentId: string, question: string): Promise<string> => {
@@ -339,8 +430,7 @@ Then provide numbered key points:
 End with: "Overall, the document serves as a certificate of insurance and policy schedule, detailing the terms, conditions, and coverage of the insurance policy."
 
 IMPORTANT FORMATTING RULES:
-- Do NOT use ** for bold formatting
-- Do NOT use # symbols
+- Do NOT use bold formatting or special symbols
 - Use plain text only
 - Add proper line spacing between sections`;
     }
@@ -363,8 +453,7 @@ Please format your response like this example:
 3. Deductibles: There is a compulsory deductible of Rs. 100 for each claim, which means the insured will have to bear this amount before the insurance coverage applies."
 
 CRITICAL FORMATTING REQUIREMENTS:
-- Do NOT use ** for bold formatting anywhere
-- Do NOT use # symbols  
+- Do NOT use bold formatting or special symbols anywhere
 - Use plain text only
 - Add proper line spacing between each numbered item
 - Use simple numbered format (1., 2., 3., etc.)
