@@ -6,7 +6,8 @@ import { Send } from "lucide-react";
 import { ChatMessage } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { saveChatMessage, getChatHistory } from "@/services/history";
+import { temporaryChatStorage } from "@/services/temporaryChatStorage";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChatInterfaceProps {
   sourceId: string | null;
@@ -17,13 +18,17 @@ interface ChatInterfaceProps {
 const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProps) => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const { user } = useAuth();
 
-  // Load chat history on mount if sourceId is available
+  // Load chat history from temporary storage when sourceId changes
   useEffect(() => {
     if (sourceId) {
-      getChatHistory(sourceId).then(setChatHistory);
+      const tempHistory = temporaryChatStorage.getChatHistory(user?.id, sourceId);
+      setChatHistory(tempHistory);
+    } else {
+      setChatHistory([]);
     }
-  }, [sourceId]);
+  }, [sourceId, user?.id]);
 
   const handleSendMessage = async () => {
     if (!message.trim() || !sourceId) return;
@@ -35,9 +40,12 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
       timestamp: new Date(),
     };
 
+    // Update local state
     setChatHistory((c) => [...c, userMessage]);
     setMessage("");
-    saveChatMessage(sourceId, userMessage);
+    
+    // Save to temporary storage
+    temporaryChatStorage.saveMessage(user?.id, sourceId, userMessage);
 
     try {
       const response = await onSendMessage(message);
@@ -47,8 +55,12 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         content: response,
         timestamp: new Date(),
       };
+      
+      // Update local state
       setChatHistory((prev) => [...prev, assistantMessage]);
-      saveChatMessage(sourceId, assistantMessage);
+      
+      // Save to temporary storage
+      temporaryChatStorage.saveMessage(user?.id, sourceId, assistantMessage);
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: ChatMessage = {
@@ -58,7 +70,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         timestamp: new Date(),
       };
       setChatHistory(prev => [...prev, errorMessage]);
-      saveChatMessage(sourceId, errorMessage);
+      temporaryChatStorage.saveMessage(user?.id, sourceId, errorMessage);
     }
   };
 
@@ -74,6 +86,9 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         </h3>
         <p className="text-sm text-muted-foreground">
           Ask questions about your policy coverage, terms, and conditions
+          <span className="block text-xs text-gray-400 mt-1">
+            Chat history is kept for 10 minutes during your session
+          </span>
         </p>
       </div>
       
