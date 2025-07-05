@@ -7,6 +7,7 @@ interface Profile {
   id: string;
   email: string;
   name: string;
+  is_admin?: boolean;
 }
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   loading: boolean;
 }
 
@@ -40,6 +42,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const isAdmin = profile?.email === 'gomsrums@gmail.com';
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -61,7 +65,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               if (error) {
                 console.log('Profile fetch error:', error);
               } else if (profileData) {
-                setProfile(profileData);
+                setProfile({
+                  ...profileData,
+                  is_admin: profileData.email === 'gomsrums@gmail.com'
+                });
               }
             } catch (error) {
               console.error('Error fetching profile:', error);
@@ -86,7 +93,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = 'https://knowyourinsurance.uk/';
     
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -126,6 +133,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signIn,
     signOut,
     isAuthenticated: !!user,
+    isAdmin,
     loading,
   };
 

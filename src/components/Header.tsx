@@ -2,12 +2,12 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, User, Loader2 } from "lucide-react";
+import { LogOut, User, Loader2, Shield } from "lucide-react";
 import EmailSubscription from "@/components/EmailSubscription";
 import { analytics } from "@/services/analytics";
 
 const Header = () => {
-  const { user, profile, signOut, isAuthenticated, loading } = useAuth();
+  const { user, profile, signOut, isAuthenticated, isAdmin, loading } = useAuth();
 
   const handleSignOut = async () => {
     analytics.trackEvent('sign_out_clicked');
@@ -58,6 +58,18 @@ const Header = () => {
             Brokers
           </Link>
           
+          {/* Admin Link - Only visible to admin */}
+          {isAuthenticated && isAdmin && (
+            <Link 
+              to="/admin" 
+              className="text-insurance-gray hover:text-insurance-blue transition-colors flex items-center gap-1"
+              onClick={() => handleNavClick('admin')}
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </Link>
+          )}
+          
           {loading ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -68,6 +80,7 @@ const Header = () => {
               <span className="flex items-center gap-2 text-insurance-gray">
                 <User className="h-4 w-4" />
                 {profile?.name || user?.email?.split('@')[0]}
+                {isAdmin && <Shield className="h-3 w-3 text-insurance-blue" />}
               </span>
               <Button
                 onClick={handleSignOut}
