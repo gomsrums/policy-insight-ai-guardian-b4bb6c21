@@ -11,8 +11,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import FileUploader from "@/components/FileUploader";
 import PolicyExtractionDemo from "@/components/PolicyExtractionDemo";
+import ParameterWeightSelector from "@/components/ParameterWeightSelector";
 import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
+import { PolicyComparisonCriteria, DEFAULT_PARAMETER_WEIGHTS } from "@/types/comparison";
 import { nanoid } from "nanoid";
 import FancyBackground from "@/components/FancyBackground";
 
@@ -37,6 +39,8 @@ const Comparison = () => {
     policy1: ComparisonResult;
     policy2: ComparisonResult;
   } | null>(null);
+  const [parameterWeights, setParameterWeights] = useState<PolicyComparisonCriteria>(DEFAULT_PARAMETER_WEIGHTS);
+  const [selectedMarket, setSelectedMarket] = useState<'US' | 'UK' | 'India'>('US');
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
@@ -274,53 +278,53 @@ startxref
               Policy Comparison & Data Extraction
             </h1>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Compare insurance policies and extract structured data using AI-powered analysis
+              Compare insurance policies using AI-powered analysis with customizable comparison parameters
             </p>
           </div>
 
-          {/* Algorithm Info Card */}
+          {/* Enhanced Algorithm Info Card */}
           <Card className="mb-8 bg-white/80 backdrop-blur-sm border border-white/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                🔍 Advanced Comparison Algorithm with ChatPDF AI
+                🔍 Advanced Comparison Algorithm with 7 Key Parameters
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Key Parameters</h4>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Core Parameters</h4>
                   <ul className="space-y-1 text-gray-600">
-                    <li>• Premium costs</li>
-                    <li>• Coverage limits</li>
-                    <li>• Deductibles</li>
-                    <li>• Policy exclusions</li>
+                    <li>• Premium costs (40%)</li>
+                    <li>• Coverage extent (30%)</li>
+                    <li>• Deductible amounts (15%)</li>
+                    <li>• Policy exclusions (5%)</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Data Extraction</h4>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Quality Metrics</h4>
                   <ul className="space-y-1 text-gray-600">
-                    <li>• ChatPDF AI integration</li>
-                    <li>• Structured data parsing</li>
-                    <li>• Multi-format support</li>
-                    <li>• Validation & accuracy</li>
+                    <li>• Insurer financial ratings (5%)</li>
+                    <li>• Claims processing speed (3%)</li>
+                    <li>• Customer service scores (2%)</li>
+                    <li>• Customizable weights</li>
                   </ul>
                 </div>
                 <div>
                   <h4 className="font-semibold text-insurance-blue-dark mb-2">Market Coverage</h4>
                   <ul className="space-y-1 text-gray-600">
-                    <li>• United States</li>
-                    <li>• United Kingdom</li>
-                    <li>• India</li>
+                    <li>• United States (USD)</li>
+                    <li>• United Kingdom (GBP)</li>
+                    <li>• India (INR)</li>
                     <li>• Multi-currency support</li>
                   </ul>
                 </div>
                 <div>
                   <h4 className="font-semibold text-insurance-blue-dark mb-2">Success Metrics</h4>
                   <ul className="space-y-1 text-gray-600">
-                    <li>• Extraction accuracy</li>
                     <li>• Bias-free comparisons</li>
-                    <li>• User satisfaction</li>
-                    <li>• Data validation</li>
+                    <li>• User satisfaction tracking</li>
+                    <li>• Parameter usage analytics</li>
+                    <li>• Accuracy validation</li>
                   </ul>
                 </div>
               </div>
@@ -328,13 +332,77 @@ startxref
           </Card>
 
           <Tabs defaultValue="extraction" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="extraction">Data Extraction Demo</TabsTrigger>
+              <TabsTrigger value="parameters">Parameter Configuration</TabsTrigger>
               <TabsTrigger value="comparison">Policy Comparison</TabsTrigger>
             </TabsList>
             
             <TabsContent value="extraction">
               <PolicyExtractionDemo />
+            </TabsContent>
+            
+            <TabsContent value="parameters">
+              <div className="space-y-6">
+                <Card className="bg-white/80 backdrop-blur-sm border border-white/20">
+                  <CardHeader>
+                    <CardTitle>Market Selection</CardTitle>
+                    <p className="text-sm text-gray-600">
+                      Choose your target market for parameter optimization
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-4">
+                      {(['US', 'UK', 'India'] as const).map((market) => (
+                        <Button
+                          key={market}
+                          variant={selectedMarket === market ? "default" : "outline"}
+                          onClick={() => setSelectedMarket(market)}
+                          className="flex-1"
+                        >
+                          {market === 'US' && '🇺🇸 United States (USD)'}
+                          {market === 'UK' && '🇬🇧 United Kingdom (GBP)'}
+                          {market === 'India' && '🇮🇳 India (INR)'}
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <ParameterWeightSelector
+                  weights={parameterWeights}
+                  onWeightsChange={setParameterWeights}
+                  market={selectedMarket}
+                />
+                
+                <Card className="bg-white/80 backdrop-blur-sm border border-white/20">
+                  <CardHeader>
+                    <CardTitle>Parameter Data Sources</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <h4 className="font-semibold mb-2">ChatPDF AI Extraction</h4>
+                        <ul className="space-y-1 text-gray-600">
+                          <li>• Premium amounts and payment terms</li>
+                          <li>• Coverage types and limits</li>
+                          <li>• Deductible structures</li>
+                          <li>• Policy exclusions and limitations</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-2">External Data Sources</h4>
+                        <ul className="space-y-1 text-gray-600">
+                          <li>• AM Best, S&P, Moody's ratings</li>
+                          <li>• Industry claims processing reports</li>
+                          <li>• Customer satisfaction surveys</li>
+                          <li>• Regulatory compliance data</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
             
             <TabsContent value="comparison">
