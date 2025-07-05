@@ -17,6 +17,7 @@ import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { PolicyComparisonCriteria, DEFAULT_PARAMETER_WEIGHTS } from "@/types/comparison";
 import { nanoid } from "nanoid";
 import FancyBackground from "@/components/FancyBackground";
+import { comparisonPipeline } from "@/services/comparisonDataPipeline";
 
 interface ComparisonResult {
   name: string;
@@ -168,8 +169,7 @@ startxref
   };
 
   const handleCompare = async () => {
-    let document1: PolicyDocument;
-    let document2: PolicyDocument;
+    let documents: PolicyDocument[] = [];
 
     if (activeTab === "text") {
       if (!quotation1.trim() || !quotation2.trim()) {
@@ -185,21 +185,22 @@ startxref
       const pdfFile1 = await createPDFFromText(quotation1, "policy-1.pdf");
       const pdfFile2 = await createPDFFromText(quotation2, "policy-2.pdf");
 
-      document1 = {
-        id: nanoid(),
-        name: "Policy A",
-        type: "file",
-        file: pdfFile1,
-        status: "processing",
-      };
-
-      document2 = {
-        id: nanoid(),
-        name: "Policy B", 
-        type: "file",
-        file: pdfFile2,
-        status: "processing",
-      };
+      documents = [
+        {
+          id: nanoid(),
+          name: "Policy A",
+          type: "file",
+          file: pdfFile1,
+          status: "processing",
+        },
+        {
+          id: nanoid(),
+          name: "Policy B", 
+          type: "file",
+          file: pdfFile2,
+          status: "processing",
+        }
+      ];
     } else {
       if (!policy1Document || !policy2Document) {
         toast({
@@ -210,8 +211,7 @@ startxref
         return;
       }
 
-      document1 = policy1Document;
-      document2 = policy2Document;
+      documents = [policy1Document, policy2Document];
     }
 
     setIsAnalyzing(true);
@@ -219,29 +219,61 @@ startxref
     try {
       toast({
         title: "Analyzing Policies",
-        description: "Converting and analyzing your policies with AI...",
+        description: "Extracting data and running transparent comparison algorithm...",
       });
 
-      // Analyze both policies with AI
-      const [policy1Analysis, policy2Analysis] = await Promise.all([
-        analyzeWithChatPDF(document1, "Policy A"),
-        analyzeWithChatPDF(document2, "Policy B")
-      ]);
+      // Create user criteria for comparison
+      const userCriteria: UserCriteria = {
+        budget: { min: 0, max: 10000, currency: selectedMarket === 'US' ? 'USD' : selectedMarket === 'UK' ? 'GBP' : 'INR' },
+        priorities: parameterWeights,
+        insuranceType: 'auto',
+        market: selectedMarket
+      };
 
-      setComparisonResults({
-        policy1: policy1Analysis,
-        policy2: policy2Analysis
-      });
+      // Run the complete comparison pipeline
+      const pipelineResult = await comparisonPipeline.processDocumentsAndCompare(
+        documents,
+        userCriteria
+      );
 
-      toast({
-        title: "Comparison Complete",
-        description: "Your insurance policies have been analyzed and compared using AI.",
-      });
+      if (pipelineResult.success && pipelineResult.results) {
+        // Convert to the format expected by the existing UI
+        const policy1Result = pipelineResult.results[0];
+        const policy2Result = pipelineResult.results[1] || pipelineResult.results[0]; // Fallback if only one policy
+
+        setComparisonResults({
+          policy1: {
+            name: policy1Result.policy.name,
+            riskCover: policy1Result.score >= 8 ? "Low" : policy1Result.score >= 6 ? "Medium" : "High",
+            coverageGap: policy1Result.breakdown.coverage >= 8 ? "Low" : policy1Result.breakdown.coverage >= 6 ? "Medium" : "High",
+            benchmarkRating: policy1Result.score,
+            premiumComparison: `$${policy1Result.policy.premium.annual.toLocaleString()}/year`,
+            coverageLimit: `$${Object.values(policy1Result.policy.coverage).reduce((sum, val) => sum + (val || 0), 0).toLocaleString()}`,
+            missingCoverages: policy1Result.weaknesses.slice(0, 3)
+          },
+          policy2: {
+            name: policy2Result.policy.name,
+            riskCover: policy2Result.score >= 8 ? "Low" : policy2Result.score >= 6 ? "Medium" : "High",
+            coverageGap: policy2Result.breakdown.coverage >= 8 ? "Low" : policy2Result.breakdown.coverage >= 6 ? "Medium" : "High",
+            benchmarkRating: policy2Result.score,
+            premiumComparison: `$${policy2Result.policy.premium.annual.toLocaleString()}/year`,
+            coverageLimit: `$${Object.values(policy2Result.policy.coverage).reduce((sum, val) => sum + (val || 0), 0).toLocaleString()}`,
+            missingCoverages: policy2Result.weaknesses.slice(0, 3)
+          }
+        });
+
+        toast({
+          title: "Comparison Complete",
+          description: `Analyzed ${pipelineResult.extractionSummary?.successfulExtractions} policies using transparent scoring algorithm.`,
+        });
+      } else {
+        throw new Error(pipelineResult.error || "Pipeline processing failed");
+      }
     } catch (error) {
       console.error("Error analyzing policies:", error);
       toast({
         title: "Analysis Failed", 
-        description: "There was an error analyzing your policies with AI. Please try again.",
+        description: "There was an error analyzing your policies. Please try again.",
         variant: "destructive",
       });
     } finally {
