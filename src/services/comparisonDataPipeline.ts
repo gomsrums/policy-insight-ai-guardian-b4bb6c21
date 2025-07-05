@@ -1,8 +1,9 @@
 
+
 import { ExtractedPolicyData } from '@/types/policyExtraction';
 import { InsurancePolicy, UserCriteria, ComparisonResult } from '@/types/comparison';
 import { policyDataManager } from './policyDataManager';
-import { scoringEngine } from './scoringEngine';
+import { scoringEngine, PolicyScore } from './scoringEngine';
 import { PolicyDocument } from '@/lib/chatpdf-types';
 
 export interface ComparisonPipelineResult {
@@ -216,7 +217,7 @@ export class ComparisonDataPipeline {
   /**
    * Identify policy strengths based on scores
    */
-  private identifyStrengths(scores: Record<string, number>): string[] {
+  private identifyStrengths(scores: PolicyScore): string[] {
     const strengths: string[] = [];
     
     if (scores.premium >= 8) strengths.push("Excellent value for money");
@@ -233,7 +234,7 @@ export class ComparisonDataPipeline {
   /**
    * Identify policy weaknesses based on scores
    */
-  private identifyWeaknesses(scores: Record<string, number>): string[] {
+  private identifyWeaknesses(scores: PolicyScore): string[] {
     const weaknesses: string[] = [];
     
     if (scores.premium < 5) weaknesses.push("Higher premium costs");
@@ -250,11 +251,11 @@ export class ComparisonDataPipeline {
   /**
    * Generate recommendation based on scores and user criteria
    */
-  private generateRecommendation(scores: Record<string, number>, userCriteria: UserCriteria): string {
+  private generateRecommendation(scores: PolicyScore, userCriteria: UserCriteria): string {
     const topPriority = Object.entries(userCriteria.priorities)
       .sort(([,a], [,b]) => b - a)[0][0];
     
-    const overallScore = Object.values(scores).reduce((sum: number, score: number) => sum + score, 0) / Object.keys(scores).length;
+    const overallScore = (scores.premium + scores.coverage + scores.deductible + scores.exclusions + scores.insurerRating + scores.claimsProcess + scores.customerService) / 7;
     
     if (topPriority === 'premium' && scores.premium >= 7) {
       return "Excellent choice for budget-conscious buyers";

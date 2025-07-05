@@ -1,4 +1,3 @@
-
 import { InsurancePolicy, UserCriteria, ComparisonResult, PolicyComparisonCriteria, InsurerRating, ClaimsProcessMetrics } from '@/types/comparison';
 import { scoringEngine, PolicyScore } from './scoringEngine';
 
@@ -49,9 +48,9 @@ export class InsurancePolicyComparator {
           claimsProcess: result.scores.claimsProcess,
           customerService: result.scores.customerService
         },
-        strengths: this.identifyStrengths(result.policy, result.scores as Record<string, number>),
-        weaknesses: this.identifyWeaknesses(result.policy, result.scores as Record<string, number>),
-        recommendation: this.generateRecommendation(result.policy, result.scores as Record<string, number>, userCriteria),
+        strengths: this.identifyStrengths(result.policy, result.scores),
+        weaknesses: this.identifyWeaknesses(result.policy, result.scores),
+        recommendation: this.generateRecommendation(result.policy, result.scores, userCriteria),
         rankPosition: 0 // Will be set after sorting
       }))
       .sort((a, b) => b.score - a.score)
@@ -113,7 +112,7 @@ export class InsurancePolicyComparator {
   /**
    * Identify policy strengths based on scores
    */
-  private identifyStrengths(policy: InsurancePolicy, scores: Record<string, number>): string[] {
+  private identifyStrengths(policy: InsurancePolicy, scores: PolicyScore): string[] {
     const strengths: string[] = [];
     
     if (scores.premium >= 8) strengths.push("Highly competitive premium pricing");
@@ -130,7 +129,7 @@ export class InsurancePolicyComparator {
   /**
    * Identify policy weaknesses based on scores
    */
-  private identifyWeaknesses(policy: InsurancePolicy, scores: Record<string, number>): string[] {
+  private identifyWeaknesses(policy: InsurancePolicy, scores: PolicyScore): string[] {
     const weaknesses: string[] = [];
     
     if (scores.premium < 4) weaknesses.push("Higher premium costs compared to alternatives");
@@ -147,11 +146,11 @@ export class InsurancePolicyComparator {
   /**
    * Generate personalized recommendation
    */
-  private generateRecommendation(policy: InsurancePolicy, scores: Record<string, number>, userCriteria: UserCriteria): string {
+  private generateRecommendation(policy: InsurancePolicy, scores: PolicyScore, userCriteria: UserCriteria): string {
     const topPriority = Object.entries(userCriteria.priorities)
       .sort(([,a], [,b]) => b - a)[0][0];
     
-    const overallScore = Object.values(scores).reduce((sum: number, score: number) => sum + score, 0) / Object.keys(scores).length;
+    const overallScore = (scores.premium + scores.coverage + scores.deductible + scores.exclusions + scores.insurerRating + scores.claimsProcess + scores.customerService) / 7;
     
     if (topPriority === 'premium' && scores.premium >= 7) {
       return "Excellent choice for budget-conscious buyers seeking value";

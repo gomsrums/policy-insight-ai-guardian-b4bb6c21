@@ -10,7 +10,7 @@ export interface ScoringContext {
   maxCoverage: number;
 }
 
-export interface PolicyScore {
+export interface PolicyScore extends Record<string, number> {
   premium: number;
   coverage: number;
   deductible: number;
