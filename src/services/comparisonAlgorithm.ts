@@ -262,7 +262,7 @@ export class InsurancePolicyComparator {
   /**
    * Identify policy strengths based on scores
    */
-  private identifyStrengths(policy: InsurancePolicy, scores: any): string[] {
+  private identifyStrengths(policy: InsurancePolicy, scores: { [key: string]: number }): string[] {
     const strengths: string[] = [];
     
     if (scores.premium >= 75) strengths.push("Highly competitive premium pricing");
@@ -279,7 +279,7 @@ export class InsurancePolicyComparator {
   /**
    * Identify policy weaknesses based on scores
    */
-  private identifyWeaknesses(policy: InsurancePolicy, scores: any): string[] {
+  private identifyWeaknesses(policy: InsurancePolicy, scores: { [key: string]: number }): string[] {
     const weaknesses: string[] = [];
     
     if (scores.premium < 40) weaknesses.push("Higher premium costs compared to alternatives");
@@ -296,8 +296,8 @@ export class InsurancePolicyComparator {
   /**
    * Generate personalized recommendation
    */
-  private generateRecommendation(policy: InsurancePolicy, scores: any, criteria: UserCriteria): string {
-    const topPriority = Object.entries(criteria.priorities)
+  private generateRecommendation(policy: InsurancePolicy, scores: { [key: string]: number }, userCriteria: UserCriteria): string {
+    const topPriority = Object.entries(userCriteria.priorities)
       .sort(([,a], [,b]) => b - a)[0][0];
     
     const overallScore = Object.values(scores).reduce((sum: number, score: number) => sum + score, 0) / Object.keys(scores).length;
@@ -357,7 +357,15 @@ export class InsurancePolicyComparator {
     riskTolerance: 'low' | 'medium' | 'high';
     primaryConcern: 'cost' | 'coverage' | 'service';
   }): PolicyComparisonCriteria {
-    const base = { ...criteria };
+    const base = { 
+      premium: 40,
+      coverage: 30,
+      deductible: 15,
+      exclusions: 5,
+      insurerRating: 5,
+      claimsProcess: 3,
+      customerService: 2
+    };
     
     // Adjust based on age
     if (userProfile.age < 30) {
