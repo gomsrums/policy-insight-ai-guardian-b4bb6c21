@@ -36,6 +36,45 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_name: string
+          id: string
+          ip_address: unknown | null
+          page_url: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_name: string
+          id?: string
+          ip_address?: unknown | null
+          page_url?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_name?: string
+          id?: string
+          ip_address?: unknown | null
+          page_url?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       broker_companies: {
         Row: {
           company_name: string
@@ -298,6 +337,42 @@ export type Database = {
           mandatory?: boolean
           region?: string
           regulation_text?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          device_type: string | null
+          ended_at: string | null
+          id: string
+          last_activity: string | null
+          os: string | null
+          session_id: string
+          started_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          last_activity?: string | null
+          os?: string | null
+          session_id: string
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          last_activity?: string | null
+          os?: string | null
+          session_id?: string
+          started_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

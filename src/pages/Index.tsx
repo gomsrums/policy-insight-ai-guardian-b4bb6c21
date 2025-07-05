@@ -1,13 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import DocumentUploadSection from "@/components/DocumentUploadSection";
 import AnalysisResultsSection from "@/components/AnalysisResultsSection";
 import FooterSection from "@/components/FooterSection";
+import LoginDialog from "@/components/LoginDialog";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
+import { analytics } from "@/services/analytics";
 
 const Index = () => {
   const [documents, setDocuments] = useState<PolicyDocument[]>([]);
@@ -17,7 +21,14 @@ const Index = () => {
   const [isChatting, setIsChatting] = useState(false);
   const [analysisHistory, setAnalysisHistory] = useState([]);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+
+  // Track page view on component mount
+  useEffect(() => {
+    analytics.trackPageView('home');
+  }, []);
 
   // Sample policy text for demonstration
   const samplePolicyText = `
@@ -67,26 +78,44 @@ Policy Period: January 1, 2024 to January 1, 2025
     }
   }, [analysisResult?.document_id]);
 
+  const requireAuth = (action: () => void) => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+      analytics.trackEvent('auth_required', { action: 'document_analysis' });
+      return;
+    }
+    action();
+  };
+
   const handleFileAdded = (newDocument: PolicyDocument) => {
-    setDocuments([newDocument]);
-    analyzeDocumentForChat(newDocument);
+    requireAuth(() => {
+      setDocuments([newDocument]);
+      analytics.trackDocumentUpload('file');
+      analyzeDocumentForChat(newDocument);
+    });
   };
 
   const handleTextAdded = (newDocument: PolicyDocument) => {
-    setDocuments([newDocument]);
-    analyzeDocumentForChat(newDocument);
+    requireAuth(() => {
+      setDocuments([newDocument]);
+      analytics.trackDocumentUpload('text');
+      analyzeDocumentForChat(newDocument);
+    });
   };
 
   const handleUseSampleText = () => {
-    const sampleDocument: PolicyDocument = {
-      id: `sample-${Date.now()}`,
-      name: "Sample Home Insurance Policy",
-      type: "text",
-      content: samplePolicyText,
-      status: "ready"
-    };
-    setDocuments([sampleDocument]);
-    analyzeDocumentForChat(sampleDocument);
+    requireAuth(() => {
+      const sampleDocument: PolicyDocument = {
+        id: `sample-${Date.now()}`,
+        name: "Sample Home Insurance Policy",
+        type: "text",
+        content: samplePolicyText,
+        status: "ready"
+      };
+      setDocuments([sampleDocument]);
+      analytics.trackDocumentUpload('sample');
+      analyzeDocumentForChat(sampleDocument);
+    });
   };
 
   const handleRemoveDocument = (id: string) => {
@@ -99,6 +128,7 @@ Policy Period: January 1, 2024 to January 1, 2025
     
     setAnalysisResult(null);
     setShowAnalysis(false);
+    analytics.trackEvent('document_removed');
   };
 
   const analyzeDocumentForChat = async (document: PolicyDocument) => {
@@ -110,6 +140,7 @@ Policy Period: January 1, 2024 to January 1, 2025
     
     try {
       console.log("Processing document for analysis:", document.name);
+      analytics.trackAnalysisRequest('policy_analysis');
       
       setDocuments(docs => 
         docs.map(doc => 
@@ -142,6 +173,11 @@ Policy Period: January 1, 2024 to January 1, 2025
         )
       );
       
+      analytics.trackEvent('analysis_completed', { 
+        document_type: document.type,
+        risk_level: result.risk_assessment?.overall_risk_level 
+      });
+      
       toast({
         title: "Analysis Complete",
         description: "Your policy has been analyzed and is ready for review.",
@@ -149,6 +185,7 @@ Policy Period: January 1, 2024 to January 1, 2025
 
     } catch (error) {
       console.error("Error processing document:", error);
+      analytics.trackEvent('analysis_failed', { error: error instanceof Error ? error.message : 'Unknown error' });
       
       let errorMessage = "There was an error analyzing your document. Please try again.";
       
@@ -194,7 +231,15 @@ Policy Period: January 1, 2024 to January 1, 2025
   };
 
   const handleSendMessage = async (message: string) => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+      analytics.trackEvent('auth_required', { action: 'chat_message' });
+      return "Please sign in to ask questions about your policy.";
+    }
+
     setIsChatting(true);
+    analytics.trackChatMessage(message.length);
+    
     try {
       const documentId = analysisResult?.document_id;
       
@@ -203,9 +248,11 @@ Policy Period: January 1, 2024 to January 1, 2025
       }
       
       const response = await sendChatMessage(documentId, message);
+      analytics.trackEvent('chat_response_received', { response_length: response.length });
       return response;
     } catch (error) {
       console.error("Error sending message:", error);
+      analytics.trackEvent('chat_error', { error: error instanceof Error ? error.message : 'Unknown error' });
       
       if (error instanceof Error) {
         if (error.message.includes("authentication failed") || error.message.includes("401")) {
@@ -255,6 +302,12 @@ Policy Period: January 1, 2024 to January 1, 2025
       </main>
       
       <FooterSection />
+      
+      <LoginDialog 
+        isOpen={showLoginDialog} 
+        onClose={() => setShowLoginDialog(false)}
+        onSuccess={() => setShowLoginDialog(false)}
+      />
     </div>
   );
 };
