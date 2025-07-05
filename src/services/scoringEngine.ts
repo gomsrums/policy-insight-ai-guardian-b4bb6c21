@@ -1,4 +1,3 @@
-
 import { InsurancePolicy, PolicyComparisonCriteria } from '@/types/comparison';
 
 export interface ScoringContext {
@@ -10,7 +9,7 @@ export interface ScoringContext {
   maxCoverage: number;
 }
 
-export interface PolicyScore extends Record<string, number> {
+export interface PolicyScore {
   premium: number;
   coverage: number;
   deductible: number;
@@ -39,16 +38,18 @@ export class TransparentScoringEngine {
     console.log('Scoring context:', context);
     
     return policies.map(policy => {
-      const scores = this.calculatePolicyScore(policy, context);
-      const weightedTotal = this.calculateWeightedTotal(scores, weights);
-      const breakdown = this.generateScoringBreakdown(policy, scores, context);
+      const individualScores = this.calculatePolicyScore(policy, context);
+      const weightedTotal = this.calculateWeightedTotal(individualScores, weights);
+      const breakdown = this.generateScoringBreakdown(policy, individualScores, context);
+      
+      const scores: PolicyScore = {
+        ...individualScores,
+        total: weightedTotal
+      };
       
       return {
         policy,
-        scores: {
-          ...scores,
-          total: weightedTotal
-        },
+        scores,
         breakdown
       };
     });
@@ -77,7 +78,9 @@ export class TransparentScoringEngine {
    * Calculate individual parameter scores (0-10 scale)
    */
   private calculatePolicyScore(policy: InsurancePolicy, context: ScoringContext): Omit<PolicyScore, 'total'> {
-    return {
+    console.log('Calculating scores for policy:', policy.name, 'Premium:', policy.premium.annual);
+    
+    const scores = {
       premium: this.scorePremium(policy.premium.annual, context),
       coverage: this.scoreCoverage(policy.coverage, context),
       deductible: this.scoreDeductible(policy.deductible, context),
@@ -86,31 +89,50 @@ export class TransparentScoringEngine {
       claimsProcess: this.scoreClaimsProcess(policy.claimsProcess),
       customerService: this.scoreCustomerService(policy.ratings.customerService)
     };
+    
+    console.log('Individual scores:', scores);
+    return scores;
   }
   
   /**
    * Score premium (lower is better): 0-10 scale
    */
   private scorePremium(premium: number, context: ScoringContext): number {
+    console.log('Scoring premium:', premium, 'Context:', context.minPremium, '-', context.maxPremium);
+    
+    if (!premium || premium <= 0) {
+      console.log('Invalid premium, returning 0');
+      return 0;
+    }
+    
     if (context.maxPremium === context.minPremium) return 10;
     
     // Invert: lower premium = higher score
     const normalizedScore = (context.maxPremium - premium) / (context.maxPremium - context.minPremium);
-    return Math.round(normalizedScore * 10 * 100) / 100; // Round to 2 decimal places
+    const score = Math.round(Math.max(0, Math.min(1, normalizedScore)) * 10 * 100) / 100;
+    console.log('Premium score calculated:', score);
+    return score;
   }
   
   /**
    * Score coverage (more comprehensive = better): 0-10 scale
    */
   private scoreCoverage(coverage: InsurancePolicy['coverage'], context: ScoringContext): number {
-    const coverageTypes = Object.keys(coverage).filter(key => coverage[key as keyof typeof coverage] && coverage[key as keyof typeof coverage]! > 0);
+    const coverageTypes = Object.keys(coverage).filter(key => {
+      const value = coverage[key as keyof typeof coverage];
+      return value && value > 0;
+    });
     const coverageCount = coverageTypes.length;
+    
+    console.log('Coverage types found:', coverageCount, 'Max coverage:', context.maxCoverage);
     
     if (context.maxCoverage === 0) return 0;
     
     // More coverage types = higher score
     const normalizedScore = coverageCount / context.maxCoverage;
-    return Math.round(Math.min(normalizedScore, 1) * 10 * 100) / 100;
+    const score = Math.round(Math.min(normalizedScore, 1) * 10 * 100) / 100;
+    console.log('Coverage score calculated:', score);
+    return score;
   }
   
   /**
@@ -220,7 +242,9 @@ export class TransparentScoringEngine {
       (scores.customerService * weights.customerService)
     ) / totalWeight;
     
-    return Math.round(weightedSum * 100) / 100;
+    const total = Math.round(weightedSum * 100) / 100;
+    console.log('Weighted total calculated:', total);
+    return total;
   }
   
   /**
