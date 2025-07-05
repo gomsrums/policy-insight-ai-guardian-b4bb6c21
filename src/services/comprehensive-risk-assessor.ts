@@ -238,8 +238,8 @@ export class ComprehensiveRiskAssessor {
           id: `risk_${category.toLowerCase().replace(/\s+/g, '_')}`,
           category,
           description: this.generateRiskDescription(category, matchedKeywords, businessProfile),
-          impact: this.mapScoreToLevel(adjustedImpact),
-          probability: this.mapScoreToLevel(adjustedProbability),
+          impact: this.mapScoreToImpactLevel(adjustedImpact),
+          probability: this.mapScoreToProbabilityLevel(adjustedProbability),
           financialExposure,
           mitigationCost: financialExposure * 0.15, // Estimated 15% of exposure
           regulatoryRisk: config.regulatoryRisk,
@@ -331,18 +331,25 @@ export class ComprehensiveRiskAssessor {
     return descriptions[category as keyof typeof descriptions] || `${category} risks detected in policy analysis`;
   }
   
-  private static mapScoreToLevel(score: number): 'Low' | 'Medium' | 'High' | 'Critical' | 'Rare' | 'Unlikely' | 'Possible' | 'Likely' | 'Almost Certain' {
+  private static mapScoreToImpactLevel(score: number): 'Low' | 'Medium' | 'High' | 'Critical' {
     if (score <= 1.5) return 'Low';
     if (score <= 2.5) return 'Medium';
     if (score <= 3.5) return 'High';
-    if (score <= 4.5) return 'Critical';
     return 'Critical';
+  }
+  
+  private static mapScoreToProbabilityLevel(score: number): 'Rare' | 'Unlikely' | 'Possible' | 'Likely' | 'Almost Certain' {
+    if (score <= 1.5) return 'Rare';
+    if (score <= 2.5) return 'Unlikely';
+    if (score <= 3.5) return 'Possible';
+    if (score <= 4.5) return 'Likely';
+    return 'Almost Certain';
   }
   
   private static buildRiskMatrix(risks: RiskFactor[]): RiskMatrixEntry[] {
     return risks.map(risk => {
-      const impactScore = this.levelToScore(risk.impact);
-      const probabilityScore = this.levelToScore(risk.probability);
+      const impactScore = this.impactLevelToScore(risk.impact);
+      const probabilityScore = this.probabilityLevelToScore(risk.probability);
       const riskScore = impactScore * probabilityScore;
       
       return {
@@ -356,15 +363,25 @@ export class ComprehensiveRiskAssessor {
     });
   }
   
-  private static levelToScore(level: string): number {
+  private static impactLevelToScore(level: 'Low' | 'Medium' | 'High' | 'Critical'): number {
     const scoreMap = {
-      'Low': 1, 'Rare': 1,
-      'Medium': 2, 'Unlikely': 2,
-      'High': 3, 'Possible': 3,
-      'Critical': 4, 'Likely': 4,
+      'Low': 1,
+      'Medium': 2,
+      'High': 3,
+      'Critical': 4
+    };
+    return scoreMap[level];
+  }
+  
+  private static probabilityLevelToScore(level: 'Rare' | 'Unlikely' | 'Possible' | 'Likely' | 'Almost Certain'): number {
+    const scoreMap = {
+      'Rare': 1,
+      'Unlikely': 2,
+      'Possible': 3,
+      'Likely': 4,
       'Almost Certain': 5
     };
-    return scoreMap[level as keyof typeof scoreMap] || 2;
+    return scoreMap[level];
   }
   
   private static getRiskColor(score: number): string {
@@ -401,8 +418,8 @@ export class ComprehensiveRiskAssessor {
   }
   
   private static determinePriority(risk: RiskFactor): 'Immediate' | 'High' | 'Medium' | 'Low' {
-    const impactScore = this.levelToScore(risk.impact);
-    const probabilityScore = this.levelToScore(risk.probability);
+    const impactScore = this.impactLevelToScore(risk.impact);
+    const probabilityScore = this.probabilityLevelToScore(risk.probability);
     const combinedScore = impactScore * probabilityScore;
     
     if (combinedScore >= 16 || risk.regulatoryRisk) return 'Immediate';
@@ -451,8 +468,8 @@ export class ComprehensiveRiskAssessor {
     if (risks.length === 0) return 0;
     
     const weightedScore = risks.reduce((sum, risk) => {
-      const impactScore = this.levelToScore(risk.impact);
-      const probabilityScore = this.levelToScore(risk.probability);
+      const impactScore = this.impactLevelToScore(risk.impact);
+      const probabilityScore = this.probabilityLevelToScore(risk.probability);
       const weight = risk.confidence;
       
       return sum + (impactScore * probabilityScore * weight);
@@ -468,7 +485,7 @@ export class ComprehensiveRiskAssessor {
     if (complianceRisks.length === 0) return 100;
     
     const averageRisk = complianceRisks.reduce((sum, risk) => {
-      return sum + (this.levelToScore(risk.impact) * this.levelToScore(risk.probability));
+      return sum + (this.impactLevelToScore(risk.impact) * this.probabilityLevelToScore(risk.probability));
     }, 0) / complianceRisks.length;
     
     return Math.max(0, Math.round(100 - (averageRisk * 4)));
@@ -479,7 +496,7 @@ export class ComprehensiveRiskAssessor {
     if (continuityRisks.length === 0) return 100;
     
     const averageRisk = continuityRisks.reduce((sum, risk) => {
-      return sum + (this.levelToScore(risk.impact) * this.levelToScore(risk.probability));
+      return sum + (this.impactLevelToScore(risk.impact) * this.probabilityLevelToScore(risk.probability));
     }, 0) / continuityRisks.length;
     
     return Math.max(0, Math.round(100 - (averageRisk * 4)));
@@ -490,7 +507,7 @@ export class ComprehensiveRiskAssessor {
     if (reputationalRisks.length === 0) return 100;
     
     const averageRisk = reputationalRisks.reduce((sum, risk) => {
-      return sum + (this.levelToScore(risk.impact) * this.levelToScore(risk.probability));
+      return sum + (this.impactLevelToScore(risk.impact) * this.probabilityLevelToScore(risk.probability));
     }, 0) / reputationalRisks.length;
     
     return Math.max(0, Math.round(100 - (averageRisk * 4)));
@@ -505,8 +522,8 @@ export class ComprehensiveRiskAssessor {
   
   private static prioritizeRisks(risks: RiskFactor[]): RiskFactor[] {
     return risks.sort((a, b) => {
-      const scoreA = this.levelToScore(a.impact) * this.levelToScore(a.probability) * a.confidence;
-      const scoreB = this.levelToScore(b.impact) * this.levelToScore(b.probability) * b.confidence;
+      const scoreA = this.impactLevelToScore(a.impact) * this.probabilityLevelToScore(a.probability) * a.confidence;
+      const scoreB = this.impactLevelToScore(b.impact) * this.probabilityLevelToScore(b.probability) * b.confidence;
       
       return scoreB - scoreA;
     });
