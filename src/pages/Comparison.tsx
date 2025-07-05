@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +13,7 @@ import FileUploader from "@/components/FileUploader";
 import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
+import FancyBackground from "@/components/FancyBackground";
 
 interface ComparisonResult {
   name: string;
@@ -263,7 +263,7 @@ startxref
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <FancyBackground>
       <Header />
       
       <main className="container mx-auto py-8 px-4">
@@ -277,7 +277,47 @@ startxref
             </p>
           </div>
 
-          <Card className="mb-8">
+          {/* Algorithm Info Card */}
+          <Card className="mb-8 bg-white/80 backdrop-blur-sm border border-white/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🔍 Unbiased Comparison Algorithm
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Key Parameters</h4>
+                  <ul className="space-y-1 text-gray-600">
+                    <li>• Premium costs</li>
+                    <li>• Coverage limits</li>
+                    <li>• Deductibles</li>
+                    <li>• Policy exclusions</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Success Metrics</h4>
+                  <ul className="space-y-1 text-gray-600">
+                    <li>• User satisfaction</li>
+                    <li>• Comparison accuracy</li>
+                    <li>• Bias-free rankings</li>
+                    <li>• Objective analysis</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">MVP Scope</h4>
+                  <ul className="space-y-1 text-gray-600">
+                    <li>• Auto insurance focus</li>
+                    <li>• UK market coverage</li>
+                    <li>• Side-by-side comparison</li>
+                    <li>• AI-powered insights</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-8 bg-white/80 backdrop-blur-sm border border-white/20">
             <CardHeader>
               <CardTitle>Policy Input Method</CardTitle>
             </CardHeader>
@@ -381,7 +421,7 @@ startxref
 
           {comparisonResults && (
             <div className="space-y-8">
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border border-white/20">
                 <CardHeader>
                   <CardTitle>AI Analysis Results</CardTitle>
                 </CardHeader>
@@ -481,7 +521,7 @@ startxref
           )}
         </div>
       </main>
-    </div>
+    </FancyBackground>
   );
 };
 
