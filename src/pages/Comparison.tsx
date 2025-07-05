@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import FileUploader from "@/components/FileUploader";
+import PolicyExtractionDemo from "@/components/PolicyExtractionDemo";
 import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { nanoid } from "nanoid";
@@ -270,10 +271,10 @@ startxref
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-insurance-blue-dark mb-2">
-              Policy Comparison
+              Policy Comparison & Data Extraction
             </h1>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Compare two insurance policy quotations side-by-side using AI analysis
+              Compare insurance policies and extract structured data using AI-powered analysis
             </p>
           </div>
 
@@ -281,11 +282,11 @@ startxref
           <Card className="mb-8 bg-white/80 backdrop-blur-sm border border-white/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                🔍 Unbiased Comparison Algorithm
+                🔍 Advanced Comparison Algorithm with ChatPDF AI
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <h4 className="font-semibold text-insurance-blue-dark mb-2">Key Parameters</h4>
                   <ul className="space-y-1 text-gray-600">
@@ -296,229 +297,251 @@ startxref
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Success Metrics</h4>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Data Extraction</h4>
                   <ul className="space-y-1 text-gray-600">
-                    <li>• User satisfaction</li>
-                    <li>• Comparison accuracy</li>
-                    <li>• Bias-free rankings</li>
-                    <li>• Objective analysis</li>
+                    <li>• ChatPDF AI integration</li>
+                    <li>• Structured data parsing</li>
+                    <li>• Multi-format support</li>
+                    <li>• Validation & accuracy</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-insurance-blue-dark mb-2">MVP Scope</h4>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Market Coverage</h4>
                   <ul className="space-y-1 text-gray-600">
-                    <li>• Auto insurance focus</li>
-                    <li>• UK market coverage</li>
-                    <li>• Side-by-side comparison</li>
-                    <li>• AI-powered insights</li>
+                    <li>• United States</li>
+                    <li>• United Kingdom</li>
+                    <li>• India</li>
+                    <li>• Multi-currency support</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-insurance-blue-dark mb-2">Success Metrics</h4>
+                  <ul className="space-y-1 text-gray-600">
+                    <li>• Extraction accuracy</li>
+                    <li>• Bias-free comparisons</li>
+                    <li>• User satisfaction</li>
+                    <li>• Data validation</li>
                   </ul>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="mb-8 bg-white/80 backdrop-blur-sm border border-white/20">
-            <CardHeader>
-              <CardTitle>Policy Input Method</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="text">Paste Text</TabsTrigger>
-                  <TabsTrigger value="upload">Upload Documents</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="text" className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Policy Quotation 1</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Textarea
-                          placeholder="Paste your first insurance policy quotation here..."
-                          value={quotation1}
-                          onChange={(e) => setQuotation1(e.target.value)}
-                          className="min-h-[200px]"
-                          disabled={isAnalyzing}
-                        />
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Policy Quotation 2</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Textarea
-                          placeholder="Paste your second insurance policy quotation here..."
-                          value={quotation2}
-                          onChange={(e) => setQuotation2(e.target.value)}
-                          className="min-h-[200px]"
-                          disabled={isAnalyzing}
-                        />
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="upload" className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Policy Document 1</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <FileUploader onFileAdded={handlePolicy1FileAdded} />
-                        {policy1Document && (
-                          <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                            <p className="text-sm font-medium text-green-700">
-                              Document uploaded: {policy1Document.name}
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Policy Document 2</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <FileUploader onFileAdded={handlePolicy2FileAdded} />
-                        {policy2Document && (
-                          <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                            <p className="text-sm font-medium text-green-700">
-                              Document uploaded: {policy2Document.name}
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-
-          <div className="text-center mb-8">
-            <Button 
-              onClick={handleCompare}
-              disabled={isAnalyzing || 
-                (activeTab === "text" && (!quotation1.trim() || !quotation2.trim())) ||
-                (activeTab === "upload" && (!policy1Document || !policy2Document))
-              }
-              className="bg-insurance-blue hover:bg-insurance-blue-dark px-8 py-3"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing with AI...
-                </>
-              ) : "Compare Your Policies"}
-            </Button>
-          </div>
-
-          {comparisonResults && (
-            <div className="space-y-8">
-              <Card className="bg-white/80 backdrop-blur-sm border border-white/20">
+          <Tabs defaultValue="extraction" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="extraction">Data Extraction Demo</TabsTrigger>
+              <TabsTrigger value="comparison">Policy Comparison</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="extraction">
+              <PolicyExtractionDemo />
+            </TabsContent>
+            
+            <TabsContent value="comparison">
+              <Card className="mb-8 bg-white/80 backdrop-blur-sm border border-white/20">
                 <CardHeader>
-                  <CardTitle>AI Analysis Results</CardTitle>
+                  <CardTitle>Policy Input Method</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Parameter</TableHead>
-                        <TableHead>{comparisonResults.policy1.name}</TableHead>
-                        <TableHead>{comparisonResults.policy2.name}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">Risk Cover</TableCell>
-                        <TableCell>
-                          <Badge variant={getRiskBadgeVariant(comparisonResults.policy1.riskCover)}>
-                            {comparisonResults.policy1.riskCover}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getRiskBadgeVariant(comparisonResults.policy2.riskCover)}>
-                            {comparisonResults.policy2.riskCover}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Coverage Gap</TableCell>
-                        <TableCell>
-                          <Badge variant={getGapBadgeVariant(comparisonResults.policy1.coverageGap)}>
-                            {comparisonResults.policy1.coverageGap}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getGapBadgeVariant(comparisonResults.policy2.coverageGap)}>
-                            {comparisonResults.policy2.coverageGap}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Benchmark Rating</TableCell>
-                        <TableCell>
-                          <span className="font-semibold text-green-600">
-                            {comparisonResults.policy1.benchmarkRating}/10
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-semibold text-green-600">
-                            {comparisonResults.policy2.benchmarkRating}/10
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Premium Comparison</TableCell>
-                        <TableCell>{comparisonResults.policy1.premiumComparison}</TableCell>
-                        <TableCell>{comparisonResults.policy2.premiumComparison}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Coverage Limit</TableCell>
-                        <TableCell>{comparisonResults.policy1.coverageLimit}</TableCell>
-                        <TableCell>{comparisonResults.policy2.coverageLimit}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Missing Coverages</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {comparisonResults.policy1.missingCoverages.map((coverage: string, index: number) => (
-                              <Badge key={index} variant="outline" className="mr-1 mb-1">
-                                {coverage}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {comparisonResults.policy2.missingCoverages.map((coverage: string, index: number) => (
-                              <Badge key={index} variant="outline" className="mr-1 mb-1">
-                                {coverage}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                      <TabsTrigger value="text">Paste Text</TabsTrigger>
+                      <TabsTrigger value="upload">Upload Documents</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="text" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Policy Quotation 1</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Textarea
+                              placeholder="Paste your first insurance policy quotation here..."
+                              value={quotation1}
+                              onChange={(e) => setQuotation1(e.target.value)}
+                              className="min-h-[200px]"
+                              disabled={isAnalyzing}
+                            />
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Policy Quotation 2</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Textarea
+                              placeholder="Paste your second insurance policy quotation here..."
+                              value={quotation2}
+                              onChange={(e) => setQuotation2(e.target.value)}
+                              className="min-h-[200px]"
+                              disabled={isAnalyzing}
+                            />
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="upload" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Policy Document 1</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <FileUploader onFileAdded={handlePolicy1FileAdded} />
+                            {policy1Document && (
+                              <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                                <p className="text-sm font-medium text-green-700">
+                                  Document uploaded: {policy1Document.name}
+                                </p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Policy Document 2</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <FileUploader onFileAdded={handlePolicy2FileAdded} />
+                            {policy2Document && (
+                              <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                                <p className="text-sm font-medium text-green-700">
+                                  Document uploaded: {policy2Document.name}
+                                </p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
-            </div>
-          )}
 
-          {!comparisonResults && !isAnalyzing && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">
-                Upload your insurance policy documents or paste policy text above and click "Compare Policies" to see detailed analysis results using AI
-              </p>
-            </div>
-          )}
+              <div className="text-center mb-8">
+                <Button 
+                  onClick={handleCompare}
+                  disabled={isAnalyzing || 
+                    (activeTab === "text" && (!quotation1.trim() || !quotation2.trim())) ||
+                    (activeTab === "upload" && (!policy1Document || !policy2Document))
+                  }
+                  className="bg-insurance-blue hover:bg-insurance-blue-dark px-8 py-3"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing with AI...
+                    </>
+                  ) : "Compare Your Policies"}
+                </Button>
+              </div>
+
+              {comparisonResults && (
+                <div className="space-y-8">
+                  <Card className="bg-white/80 backdrop-blur-sm border border-white/20">
+                    <CardHeader>
+                      <CardTitle>AI Analysis Results</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Parameter</TableHead>
+                            <TableHead>{comparisonResults.policy1.name}</TableHead>
+                            <TableHead>{comparisonResults.policy2.name}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell className="font-medium">Risk Cover</TableCell>
+                            <TableCell>
+                              <Badge variant={getRiskBadgeVariant(comparisonResults.policy1.riskCover)}>
+                                {comparisonResults.policy1.riskCover}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getRiskBadgeVariant(comparisonResults.policy2.riskCover)}>
+                                {comparisonResults.policy2.riskCover}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Coverage Gap</TableCell>
+                            <TableCell>
+                              <Badge variant={getGapBadgeVariant(comparisonResults.policy1.coverageGap)}>
+                                {comparisonResults.policy1.coverageGap}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getGapBadgeVariant(comparisonResults.policy2.coverageGap)}>
+                                {comparisonResults.policy2.coverageGap}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Benchmark Rating</TableCell>
+                            <TableCell>
+                              <span className="font-semibold text-green-600">
+                                {comparisonResults.policy1.benchmarkRating}/10
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-semibold text-green-600">
+                                {comparisonResults.policy2.benchmarkRating}/10
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Premium Comparison</TableCell>
+                            <TableCell>{comparisonResults.policy1.premiumComparison}</TableCell>
+                            <TableCell>{comparisonResults.policy2.premiumComparison}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Coverage Limit</TableCell>
+                            <TableCell>{comparisonResults.policy1.coverageLimit}</TableCell>
+                            <TableCell>{comparisonResults.policy2.coverageLimit}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Missing Coverages</TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {comparisonResults.policy1.missingCoverages.map((coverage: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="mr-1 mb-1">
+                                    {coverage}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {comparisonResults.policy2.missingCoverages.map((coverage: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="mr-1 mb-1">
+                                    {coverage}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {!comparisonResults && !isAnalyzing && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">
+                    Use the Data Extraction Demo to test AI-powered policy analysis, or upload documents for comprehensive comparison
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </FancyBackground>
