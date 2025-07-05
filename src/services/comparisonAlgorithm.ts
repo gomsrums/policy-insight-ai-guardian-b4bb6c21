@@ -1,5 +1,6 @@
+
 import { InsurancePolicy, UserCriteria, ComparisonResult, PolicyComparisonCriteria, InsurerRating, ClaimsProcessMetrics } from '@/types/comparison';
-import { scoringEngine } from './scoringEngine';
+import { scoringEngine, PolicyScore } from './scoringEngine';
 
 export class InsurancePolicyComparator {
   private policies: InsurancePolicy[] = [];
@@ -48,9 +49,9 @@ export class InsurancePolicyComparator {
           claimsProcess: result.scores.claimsProcess,
           customerService: result.scores.customerService
         },
-        strengths: this.identifyStrengths(result.policy, result.scores),
-        weaknesses: this.identifyWeaknesses(result.policy, result.scores),
-        recommendation: this.generateRecommendation(result.policy, result.scores, userCriteria),
+        strengths: this.identifyStrengths(result.policy, result.scores as Record<string, number>),
+        weaknesses: this.identifyWeaknesses(result.policy, result.scores as Record<string, number>),
+        recommendation: this.generateRecommendation(result.policy, result.scores as Record<string, number>, userCriteria),
         rankPosition: 0 // Will be set after sorting
       }))
       .sort((a, b) => b.score - a.score)
@@ -112,7 +113,7 @@ export class InsurancePolicyComparator {
   /**
    * Identify policy strengths based on scores
    */
-  private identifyStrengths(policy: InsurancePolicy, scores: { [key: string]: number }): string[] {
+  private identifyStrengths(policy: InsurancePolicy, scores: Record<string, number>): string[] {
     const strengths: string[] = [];
     
     if (scores.premium >= 8) strengths.push("Highly competitive premium pricing");
@@ -129,7 +130,7 @@ export class InsurancePolicyComparator {
   /**
    * Identify policy weaknesses based on scores
    */
-  private identifyWeaknesses(policy: InsurancePolicy, scores: { [key: string]: number }): string[] {
+  private identifyWeaknesses(policy: InsurancePolicy, scores: Record<string, number>): string[] {
     const weaknesses: string[] = [];
     
     if (scores.premium < 4) weaknesses.push("Higher premium costs compared to alternatives");
@@ -146,7 +147,7 @@ export class InsurancePolicyComparator {
   /**
    * Generate personalized recommendation
    */
-  private generateRecommendation(policy: InsurancePolicy, scores: { [key: string]: number }, userCriteria: UserCriteria): string {
+  private generateRecommendation(policy: InsurancePolicy, scores: Record<string, number>, userCriteria: UserCriteria): string {
     const topPriority = Object.entries(userCriteria.priorities)
       .sort(([,a], [,b]) => b - a)[0][0];
     

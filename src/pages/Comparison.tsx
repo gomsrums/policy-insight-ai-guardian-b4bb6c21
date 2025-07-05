@@ -14,7 +14,7 @@ import PolicyExtractionDemo from "@/components/PolicyExtractionDemo";
 import ParameterWeightSelector from "@/components/ParameterWeightSelector";
 import { uploadDocumentForAnalysis, sendChatMessage, getCoverageGaps } from "@/services/insurance-api";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
-import { PolicyComparisonCriteria, DEFAULT_PARAMETER_WEIGHTS } from "@/types/comparison";
+import { PolicyComparisonCriteria, DEFAULT_PARAMETER_WEIGHTS, UserCriteria } from "@/types/comparison";
 import { nanoid } from "nanoid";
 import FancyBackground from "@/components/FancyBackground";
 import { comparisonPipeline } from "@/services/comparisonDataPipeline";

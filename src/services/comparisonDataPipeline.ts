@@ -216,7 +216,7 @@ export class ComparisonDataPipeline {
   /**
    * Identify policy strengths based on scores
    */
-  private identifyStrengths(scores: any): string[] {
+  private identifyStrengths(scores: Record<string, number>): string[] {
     const strengths: string[] = [];
     
     if (scores.premium >= 8) strengths.push("Excellent value for money");
@@ -233,7 +233,7 @@ export class ComparisonDataPipeline {
   /**
    * Identify policy weaknesses based on scores
    */
-  private identifyWeaknesses(scores: any): string[] {
+  private identifyWeaknesses(scores: Record<string, number>): string[] {
     const weaknesses: string[] = [];
     
     if (scores.premium < 5) weaknesses.push("Higher premium costs");
@@ -250,7 +250,7 @@ export class ComparisonDataPipeline {
   /**
    * Generate recommendation based on scores and user criteria
    */
-  private generateRecommendation(scores: any, userCriteria: UserCriteria): string {
+  private generateRecommendation(scores: Record<string, number>, userCriteria: UserCriteria): string {
     const topPriority = Object.entries(userCriteria.priorities)
       .sort(([,a], [,b]) => b - a)[0][0];
     
