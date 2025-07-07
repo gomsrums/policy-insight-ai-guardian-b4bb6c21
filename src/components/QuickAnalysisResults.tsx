@@ -7,9 +7,10 @@ import { CheckCircle, AlertTriangle, AlertCircle, TrendingUp, DollarSign, Shield
 
 interface QuickAnalysisResultsProps {
   result: QuickAnalysisResult;
+  country?: string;
 }
 
-const QuickAnalysisResults = ({ result }: QuickAnalysisResultsProps) => {
+const QuickAnalysisResults = ({ result, country = 'US' }: QuickAnalysisResultsProps) => {
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
       case 'low': return 'bg-green-500';
@@ -32,6 +33,28 @@ const QuickAnalysisResults = ({ result }: QuickAnalysisResultsProps) => {
     if (score >= 8) return 'text-green-600';
     if (score >= 6) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  // Get currency info based on country
+  const getCurrencyInfo = (country: string) => {
+    const currencyMap: Record<string, { symbol: string; code: string }> = {
+      US: { symbol: '$', code: 'USD' },
+      UK: { symbol: '£', code: 'GBP' },
+      CA: { symbol: 'C$', code: 'CAD' },
+      AU: { symbol: 'A$', code: 'AUD' },
+      DE: { symbol: '€', code: 'EUR' },
+      FR: { symbol: '€', code: 'EUR' },
+      IN: { symbol: '₹', code: 'INR' },
+      JP: { symbol: '¥', code: 'JPY' },
+      SG: { symbol: 'S$', code: 'SGD' }
+    };
+    
+    return currencyMap[country] || currencyMap.US;
+  };
+
+  const formatCurrency = (amount: number, country: string) => {
+    const { symbol } = getCurrencyInfo(country);
+    return `${symbol}${amount.toLocaleString()}`;
   };
 
   return (
@@ -170,15 +193,15 @@ const QuickAnalysisResults = ({ result }: QuickAnalysisResultsProps) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div className="p-3 bg-muted/30 rounded-lg">
               <p className="text-sm text-muted-foreground">Average Premium</p>
-              <p className="text-lg font-semibold">${result.benchmarks.averagePremium.toLocaleString()}/year</p>
+              <p className="text-lg font-semibold">{formatCurrency(result.benchmarks.averagePremium, country)}/year</p>
             </div>
             <div className="p-3 bg-muted/30 rounded-lg">
               <p className="text-sm text-muted-foreground">Recommended Coverage</p>
-              <p className="text-lg font-semibold">${result.benchmarks.recommendedCoverage.toLocaleString()}</p>
+              <p className="text-lg font-semibold">{formatCurrency(result.benchmarks.recommendedCoverage, country)}</p>
             </div>
             <div className="p-3 bg-muted/30 rounded-lg">
               <p className="text-sm text-muted-foreground">Optimal Deductible</p>
-              <p className="text-lg font-semibold">${result.benchmarks.optimalDeductible.toLocaleString()}</p>
+              <p className="text-lg font-semibold">{formatCurrency(result.benchmarks.optimalDeductible, country)}</p>
             </div>
           </div>
         </CardContent>

@@ -1,131 +1,201 @@
-
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import FileUploader from "@/components/FileUploader";
-import TextInput from "@/components/TextInput";
-import DocumentPreview from "@/components/DocumentPreview";
-import QuickAnalysisForm, { QuickAnalysisData } from "@/components/QuickAnalysisForm";
-import QuickAnalysisResults from "@/components/QuickAnalysisResults";
-import { PolicyDocument } from "@/lib/chatpdf-types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, FileText, Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import QuickAnalysisForm, { QuickAnalysisData } from "./QuickAnalysisForm";
+import QuickAnalysisResults from "./QuickAnalysisResults";
 import { quickAnalysisEngine, QuickAnalysisResult } from "@/services/quickAnalysisEngine";
 
-interface DocumentUploadSectionProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  documents: PolicyDocument[];
-  onFileAdded: (document: PolicyDocument) => void;
-  onTextAdded: (document: PolicyDocument) => void;
-  onRemoveDocument: (id: string) => void;
-}
+const DocumentUploadSection = () => {
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<QuickAnalysisResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [quickAnalysisData, setQuickAnalysisData] = useState<QuickAnalysisData | null>(null);
 
-const DocumentUploadSection = ({
-  activeTab,
-  setActiveTab,
-  documents,
-  onFileAdded,
-  onTextAdded,
-  onRemoveDocument
-}: DocumentUploadSectionProps) => {
-  const [quickAnalysisResult, setQuickAnalysisResult] = useState<QuickAnalysisResult | null>(null);
-  const [isQuickAnalyzing, setIsQuickAnalyzing] = useState(false);
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-  const handleQuickAnalysis = async (data: QuickAnalysisData) => {
-    setIsQuickAnalyzing(true);
+    setIsUploading(true);
+    setUploadError(null);
+
     try {
-      // Simulate API delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const fileArray = Array.from(files);
+      
+      // Validate file types
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      const invalidFiles = fileArray.filter(file => !allowedTypes.includes(file.type));
+      
+      if (invalidFiles.length > 0) {
+        throw new Error(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Only PDF and image files are allowed.`);
+      }
+
+      // Validate file sizes (max 10MB per file)
+      const oversizedFiles = fileArray.filter(file => file.size > 10 * 1024 * 1024);
+      if (oversizedFiles.length > 0) {
+        throw new Error(`Files too large: ${oversizedFiles.map(f => f.name).join(', ')}. Maximum size is 10MB per file.`);
+      }
+
+      setUploadedFiles(prev => [...prev, ...fileArray]);
+      
+      // Here you would typically upload to your backend
+      // For now, we'll simulate the upload
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  }, []);
+
+  const handleQuickAnalysis = useCallback(async (data: QuickAnalysisData) => {
+    setIsAnalyzing(true);
+    setQuickAnalysisData(data);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       const result = quickAnalysisEngine.analyzePolicy(data);
-      setQuickAnalysisResult(result);
-      
-      console.log('Quick analysis completed:', result);
+      setAnalysisResult(result);
     } catch (error) {
-      console.error('Quick analysis failed:', error);
+      console.error('Analysis failed:', error);
+      // Handle error appropriately
     } finally {
-      setIsQuickAnalyzing(false);
+      setIsAnalyzing(false);
     }
+  }, []);
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
-    <Card className="shadow-lg border-0 bg-card">
-      <CardContent className="p-6">
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold text-foreground mb-2">
-            Analyze Your Insurance
-          </h3>
-          <p className="text-muted-foreground text-sm">
-            Choose your preferred analysis method
+    <div className="w-full max-w-4xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">
+            Insurance Document Analysis
+          </CardTitle>
+          <p className="text-center text-muted-foreground">
+            Upload your insurance documents or get quick analysis of your policy details
           </p>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="quick" className="text-sm">⚡ Quick Analysis</TabsTrigger>
-            <TabsTrigger value="file" className="text-sm">📄 Upload PDF</TabsTrigger>
-            <TabsTrigger value="text" className="text-sm">📝 Paste Text</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="quick" className="space-y-6">
-            <QuickAnalysisForm 
-              onAnalyze={handleQuickAnalysis}
-              isAnalyzing={isQuickAnalyzing}
-            />
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="quick-analysis" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="quick-analysis">Quick Analysis</TabsTrigger>
+              <TabsTrigger value="document-upload">Document Upload</TabsTrigger>
+            </TabsList>
             
-            {quickAnalysisResult && (
-              <div className="mt-6">
-                <QuickAnalysisResults result={quickAnalysisResult} />
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="file" className="space-y-6">
-            <FileUploader onFileAdded={onFileAdded} />
-            
-            {documents.length > 0 && activeTab === "file" && (
-              <div className="space-y-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-medium mb-3 text-sm">Uploaded Document</h4>
-                  <DocumentPreview 
-                    document={documents[0]} 
-                    onRemove={onRemoveDocument} 
-                  />
-                </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="text">
-            <TextInput onTextAdded={onTextAdded} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="quick-analysis" className="space-y-6">
+              <QuickAnalysisForm 
+                onAnalyze={handleQuickAnalysis} 
+                isAnalyzing={isAnalyzing}
+              />
+              
+              {analysisResult && (
+                <QuickAnalysisResults 
+                  result={analysisResult} 
+                  country={quickAnalysisData?.country}
+                />
+              )}
+            </TabsContent>
 
-        {/* Features List */}
-        <div className="mt-6 pt-6 border-t">
-          <h4 className="font-medium text-sm mb-3 text-muted-foreground uppercase tracking-wide">
-            Analysis Features
-          </h4>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-600">✓</span>
-              <span>Instant Analysis (Quick Mode)</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-600">✓</span>
-              <span>Coverage Gap Analysis</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-600">✓</span>
-              <span>Risk Assessment</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-600">✓</span>
-              <span>Interactive Chat (PDF/Text)</span>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+            <TabsContent value="document-upload" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Upload Insurance Documents</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Upload PDF files or images of your insurance policies for detailed analysis
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                    <div className="space-y-2">
+                      <Label htmlFor="file-upload" className="cursor-pointer">
+                        <span className="text-lg font-medium">Choose files to upload</span>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          PDF, JPG, PNG files up to 10MB each
+                        </p>
+                      </Label>
+                      <Input
+                        id="file-upload"
+                        type="file"
+                        multiple
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <Button 
+                        variant="outline" 
+                        disabled={isUploading}
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Select Files
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {uploadError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{uploadError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="font-medium">Uploaded Files:</h3>
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span className="text-sm">{file.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button className="w-full mt-4" disabled={uploadedFiles.length === 0}>
+                        Analyze Documents
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
