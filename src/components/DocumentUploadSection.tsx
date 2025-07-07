@@ -5,7 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import FileUploader from "@/components/FileUploader";
 import TextInput from "@/components/TextInput";
 import DocumentPreview from "@/components/DocumentPreview";
+import QuickAnalysisForm, { QuickAnalysisData } from "@/components/QuickAnalysisForm";
+import QuickAnalysisResults from "@/components/QuickAnalysisResults";
 import { PolicyDocument } from "@/lib/chatpdf-types";
+import { quickAnalysisEngine, QuickAnalysisResult } from "@/services/quickAnalysisEngine";
 
 interface DocumentUploadSectionProps {
   activeTab: string;
@@ -24,23 +27,57 @@ const DocumentUploadSection = ({
   onTextAdded,
   onRemoveDocument
 }: DocumentUploadSectionProps) => {
+  const [quickAnalysisResult, setQuickAnalysisResult] = useState<QuickAnalysisResult | null>(null);
+  const [isQuickAnalyzing, setIsQuickAnalyzing] = useState(false);
+
+  const handleQuickAnalysis = async (data: QuickAnalysisData) => {
+    setIsQuickAnalyzing(true);
+    try {
+      // Simulate API delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const result = quickAnalysisEngine.analyzePolicy(data);
+      setQuickAnalysisResult(result);
+      
+      console.log('Quick analysis completed:', result);
+    } catch (error) {
+      console.error('Quick analysis failed:', error);
+    } finally {
+      setIsQuickAnalyzing(false);
+    }
+  };
+
   return (
     <Card className="shadow-lg border-0 bg-card">
       <CardContent className="p-6">
         <div className="mb-6">
           <h3 className="text-xl font-semibold text-foreground mb-2">
-            Upload Your Policy
+            Analyze Your Insurance
           </h3>
           <p className="text-muted-foreground text-sm">
-            Get comprehensive AI analysis and chat capabilities
+            Choose your preferred analysis method
           </p>
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="quick" className="text-sm">⚡ Quick Analysis</TabsTrigger>
             <TabsTrigger value="file" className="text-sm">📄 Upload PDF</TabsTrigger>
             <TabsTrigger value="text" className="text-sm">📝 Paste Text</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="quick" className="space-y-6">
+            <QuickAnalysisForm 
+              onAnalyze={handleQuickAnalysis}
+              isAnalyzing={isQuickAnalyzing}
+            />
+            
+            {quickAnalysisResult && (
+              <div className="mt-6">
+                <QuickAnalysisResults result={quickAnalysisResult} />
+              </div>
+            )}
+          </TabsContent>
           
           <TabsContent value="file" className="space-y-6">
             <FileUploader onFileAdded={onFileAdded} />
@@ -66,9 +103,13 @@ const DocumentUploadSection = ({
         {/* Features List */}
         <div className="mt-6 pt-6 border-t">
           <h4 className="font-medium text-sm mb-3 text-muted-foreground uppercase tracking-wide">
-            What You Get
+            Analysis Features
           </h4>
           <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-green-600">✓</span>
+              <span>Instant Analysis (Quick Mode)</span>
+            </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-green-600">✓</span>
               <span>Coverage Gap Analysis</span>
@@ -79,11 +120,7 @@ const DocumentUploadSection = ({
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-green-600">✓</span>
-              <span>Policy Insights</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-600">✓</span>
-              <span>Interactive Chat</span>
+              <span>Interactive Chat (PDF/Text)</span>
             </div>
           </div>
         </div>
