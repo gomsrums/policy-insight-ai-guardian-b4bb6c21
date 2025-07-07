@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -192,7 +191,6 @@ Policy Period: January 1, 2024 to January 1, 2025
       if (error instanceof Error) {
         console.log("Error message:", error.message);
         
-        // Handle ChatPDF specific errors with more detailed messages
         if (error.message.includes("authentication failed") || error.message.includes("401")) {
           errorMessage = "❌ ChatPDF API authentication failed. The API key may be invalid, expired, or lack proper permissions. Please check the API key configuration.";
         } else if (error.message.includes("rate limit") || error.message.includes("429")) {
@@ -278,14 +276,7 @@ Policy Period: January 1, 2024 to January 1, 2025
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <div className="lg:col-span-1 space-y-6">
-              <DocumentUploadSection
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                documents={documents}
-                onFileAdded={handleFileAdded}
-                onTextAdded={handleTextAdded}
-                onRemoveDocument={handleRemoveDocument}
-              />
+              <DocumentUploadSection />
             </div>
             
             <div className="lg:col-span-2">
