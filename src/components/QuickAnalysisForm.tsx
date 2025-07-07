@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 
 export interface QuickAnalysisData {
   policyType: string;
+  country: string;
   monthlyPremium: number;
   coverageAmount: number;
   deductible: number;
@@ -24,6 +25,7 @@ interface QuickAnalysisFormProps {
 // Define proper error types with string messages
 interface FormErrors {
   policyType?: string;
+  country?: string;
   monthlyPremium?: string;
   coverageAmount?: string;
   deductible?: string;
@@ -33,6 +35,7 @@ interface FormErrors {
 const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) => {
   const [formData, setFormData] = useState<QuickAnalysisData>({
     policyType: "",
+    country: "",
     monthlyPremium: 0,
     coverageAmount: 0,
     deductible: 0,
@@ -45,6 +48,7 @@ const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) =
     const newErrors: FormErrors = {};
     
     if (!formData.policyType) newErrors.policyType = "Policy type is required";
+    if (!formData.country) newErrors.country = "Country is required";
     if (formData.monthlyPremium <= 0) newErrors.monthlyPremium = "Premium must be greater than 0";
     if (formData.coverageAmount <= 0) newErrors.coverageAmount = "Coverage amount must be greater than 0";
     if (formData.deductible < 0) newErrors.deductible = "Deductible cannot be negative";
@@ -78,23 +82,49 @@ const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) =
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="policyType">Policy Type *</Label>
-            <Select 
-              value={formData.policyType} 
-              onValueChange={(value) => updateFormData('policyType', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select your insurance type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Auto Insurance</SelectItem>
-                <SelectItem value="home">Home Insurance</SelectItem>
-                <SelectItem value="health">Health Insurance</SelectItem>
-                <SelectItem value="life">Life Insurance</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.policyType && <p className="text-sm text-red-500">{errors.policyType}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="policyType">Policy Type *</Label>
+              <Select 
+                value={formData.policyType} 
+                onValueChange={(value) => updateFormData('policyType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your insurance type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto Insurance</SelectItem>
+                  <SelectItem value="home">Home Insurance</SelectItem>
+                  <SelectItem value="health">Health Insurance</SelectItem>
+                  <SelectItem value="life">Life Insurance</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.policyType && <p className="text-sm text-red-500">{errors.policyType}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Country *</Label>
+              <Select 
+                value={formData.country} 
+                onValueChange={(value) => updateFormData('country', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="US">🇺🇸 United States</SelectItem>
+                  <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
+                  <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                  <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                  <SelectItem value="DE">🇩🇪 Germany</SelectItem>
+                  <SelectItem value="FR">🇫🇷 France</SelectItem>
+                  <SelectItem value="IN">🇮🇳 India</SelectItem>
+                  <SelectItem value="JP">🇯🇵 Japan</SelectItem>
+                  <SelectItem value="SG">🇸🇬 Singapore</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.country && <p className="text-sm text-red-500">{errors.country}</p>}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
