@@ -21,6 +21,15 @@ interface QuickAnalysisFormProps {
   isAnalyzing: boolean;
 }
 
+// Define proper error types with string messages
+interface FormErrors {
+  policyType?: string;
+  monthlyPremium?: string;
+  coverageAmount?: string;
+  deductible?: string;
+  additionalDetails?: string;
+}
+
 const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) => {
   const [formData, setFormData] = useState<QuickAnalysisData>({
     policyType: "",
@@ -30,10 +39,10 @@ const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) =
     additionalDetails: ""
   });
 
-  const [errors, setErrors] = useState<Partial<QuickAnalysisData>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = () => {
-    const newErrors: Partial<QuickAnalysisData> = {};
+    const newErrors: FormErrors = {};
     
     if (!formData.policyType) newErrors.policyType = "Policy type is required";
     if (formData.monthlyPremium <= 0) newErrors.monthlyPremium = "Premium must be greater than 0";
