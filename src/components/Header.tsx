@@ -26,7 +26,7 @@ const Header = () => {
           className="flex items-center gap-2"
           onClick={() => handleNavClick('logo')}
         >
-          <div className="font-bold text-2xl text-insurance-blue-dark">PolicyCheck</div>
+          <div className="font-bold text-2xl text-insurance-blue-dark">Know Your Insurance</div>
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           <Link 
