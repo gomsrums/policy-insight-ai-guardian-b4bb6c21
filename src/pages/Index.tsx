@@ -242,27 +242,132 @@ Policy Period: January 1, 2024 to January 1, 2025
       const documentId = analysisResult?.document_id;
       
       if (!documentId) {
-        // Simple response for general insurance questions without external API calls
-        return `I'm here to help with your insurance questions! Here are some common topics I can assist with:
+        // Provide intelligent responses based on the question asked
+        const question = message.toLowerCase();
+        
+        if (question.includes('deductible')) {
+          return `**Insurance Deductible Explained:**
 
-**Insurance Basics:**
-- Deductibles: This is the amount you pay out-of-pocket before your insurance coverage kicks in
-- Premiums: The monthly/yearly cost of your insurance policy
-- Coverage limits: The maximum amount your insurer will pay for covered claims
+A deductible is the amount of money you must pay out-of-pocket before your insurance coverage begins to pay for covered expenses.
 
-**Policy Types:**
-- Auto insurance: Covers vehicle damage and liability
-- Home insurance: Protects your property and belongings
-- Life insurance: Provides financial security for beneficiaries
-- Health insurance: Covers medical expenses
+**How it works:**
+• If you have a $500 deductible and file a $2,000 claim
+• You pay the first $500
+• Your insurance covers the remaining $1,500
 
-**Claims Process:**
-- Report incidents promptly to your insurer
-- Document everything with photos and receipts
-- Work with adjusters for damage assessments
-- Keep records of all communications
+**Types of deductibles:**
+• **Per-incident:** You pay the deductible for each separate claim
+• **Annual:** You pay the deductible once per policy year
+• **Percentage:** Some policies use a percentage of the claim amount
 
-Please upload your policy document for specific analysis, or ask me any specific insurance question you have in mind!`;
+**Higher vs Lower deductibles:**
+• Higher deductible = Lower monthly premiums
+• Lower deductible = Higher monthly premiums
+
+**Common deductible amounts:**
+• Auto insurance: $250 - $1,000
+• Home insurance: $500 - $2,500
+• Health insurance: $1,000 - $5,000+
+
+Would you like to know about deductibles for a specific type of insurance?`;
+        }
+        
+        if (question.includes('premium')) {
+          return `**Insurance Premium Explained:**
+
+A premium is the amount you pay to keep your insurance policy active, typically paid monthly, quarterly, or annually.
+
+**What affects your premium:**
+• Your risk profile (age, location, driving record, etc.)
+• Coverage amount and type
+• Deductible amount (higher deductible = lower premium)
+• Claims history
+• Credit score (in some states)
+
+**Ways to lower premiums:**
+• Increase your deductible
+• Bundle multiple policies
+• Maintain good credit
+• Take advantage of discounts
+• Shop around annually
+
+**Average premiums:**
+• Auto insurance: $1,500 - $2,000/year
+• Home insurance: $1,200 - $1,500/year
+• Life insurance: Varies widely by age and coverage
+
+Your premium is separate from your deductible - you pay premiums to maintain coverage, and deductibles when you file a claim.`;
+        }
+        
+        if (question.includes('coverage') || question.includes('limit')) {
+          return `**Insurance Coverage Limits Explained:**
+
+Coverage limits are the maximum amounts your insurance company will pay for covered claims.
+
+**Types of limits:**
+• **Per-incident limit:** Maximum for a single claim
+• **Annual limit:** Maximum per policy year
+• **Lifetime limit:** Maximum over the life of the policy
+
+**Common coverage types:**
+• **Liability coverage:** Covers damage you cause to others
+• **Property coverage:** Covers your own property/belongings
+• **Medical coverage:** Covers medical expenses
+
+**Example coverage limits:**
+• Auto liability: $100,000/$300,000/$100,000
+• Home dwelling: $250,000 - $500,000+
+• Personal property: 50-70% of dwelling coverage
+
+**Important:** If your claim exceeds your coverage limit, you're responsible for the difference. It's crucial to have adequate coverage limits based on your assets and potential risks.`;
+        }
+        
+        if (question.includes('claim')) {
+          return `**Insurance Claims Process:**
+
+A claim is a formal request to your insurance company for payment of a covered loss.
+
+**How to file a claim:**
+1. **Report immediately:** Contact your insurer ASAP
+2. **Document everything:** Take photos, keep receipts
+3. **File police report:** If applicable (theft, accidents)
+4. **Meet with adjuster:** They'll assess the damage
+5. **Review settlement:** Accept or negotiate the offer
+
+**Types of claims:**
+• **First-party:** You claim against your own policy
+• **Third-party:** Someone claims against your policy
+
+**What affects claim approval:**
+• Whether the incident is covered
+• If premiums are up to date
+• Accuracy of information provided
+• Policy limits and deductibles
+
+**Timeline:**
+• Simple claims: 1-2 weeks
+• Complex claims: 30-60 days
+• Disputed claims: Can take months
+
+**Tips for successful claims:**
+• Keep detailed records
+• Be honest and accurate
+• Follow up regularly
+• Know your policy coverage`;
+        }
+        
+        // General response for other questions
+        return `I'm here to help with your insurance questions! 
+
+**Popular topics I can explain:**
+• **Deductibles** - How much you pay before insurance kicks in
+• **Premiums** - Your insurance payment amounts
+• **Coverage limits** - Maximum amounts your insurance pays
+• **Claims process** - How to file and what to expect
+
+Try asking me about any of these topics specifically, like "What is a deductible?" or "How do insurance claims work?"
+
+For detailed analysis of your specific policy, please upload your policy document above.`;
       }
       
       const response = await sendChatMessage(documentId, message);
