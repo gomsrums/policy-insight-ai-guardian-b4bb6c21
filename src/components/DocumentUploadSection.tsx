@@ -9,17 +9,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import QuickAnalysisForm, { QuickAnalysisData } from "./QuickAnalysisForm";
 import QuickAnalysisResults from "./QuickAnalysisResults";
 import { quickAnalysisEngine, QuickAnalysisResult } from "@/services/quickAnalysisEngine";
-import { uploadDocumentForAnalysis } from "@/services/chatpdf-api";
 import { PolicyDocument } from "@/lib/chatpdf-types";
 
-const DocumentUploadSection = () => {
+interface DocumentUploadSectionProps {
+  onFileAdded?: (document: PolicyDocument) => void;
+}
+
+const DocumentUploadSection = ({ onFileAdded }: DocumentUploadSectionProps) => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<QuickAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [quickAnalysisData, setQuickAnalysisData] = useState<QuickAnalysisData | null>(null);
-  const [documentAnalysisResult, setDocumentAnalysisResult] = useState<any>(null);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -47,9 +49,17 @@ const DocumentUploadSection = () => {
 
       setUploadedFiles(prev => [...prev, ...fileArray]);
       
-      // Here you would typically upload to your backend
-      // For now, we'll simulate the upload
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Automatically trigger analysis for the first uploaded file
+      if (onFileAdded && fileArray.length > 0) {
+        const document: PolicyDocument = {
+          id: `doc-${Date.now()}`,
+          name: fileArray[0].name,
+          type: "file",
+          file: fileArray[0],
+          status: "ready"
+        };
+        onFileAdded(document);
+      }
       
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed');
@@ -81,30 +91,18 @@ const DocumentUploadSection = () => {
   };
 
   const handleDocumentAnalysis = async () => {
-    if (uploadedFiles.length === 0) return;
+    if (uploadedFiles.length === 0 || !onFileAdded) return;
     
-    setIsAnalyzing(true);
-    try {
-      const file = uploadedFiles[0]; // Analyze the first uploaded file
-      
-      const policyDocument: PolicyDocument = {
-        id: `doc-${Date.now()}`,
-        name: file.name,
-        type: "file",
-        file: file,
-        status: "processing"
-      };
-      
-      const result = await uploadDocumentForAnalysis(policyDocument);
-      setDocumentAnalysisResult(result);
-      
-      console.log("Document analysis completed:", result);
-    } catch (error) {
-      console.error("Document analysis failed:", error);
-      // Handle error appropriately
-    } finally {
-      setIsAnalyzing(false);
-    }
+    const file = uploadedFiles[0]; // Analyze the first uploaded file
+    const document: PolicyDocument = {
+      id: `doc-${Date.now()}`,
+      name: file.name,
+      type: "file",
+      file: file,
+      status: "ready"
+    };
+    
+    onFileAdded(document);
   };
 
   return (
@@ -136,48 +134,6 @@ const DocumentUploadSection = () => {
                   result={analysisResult} 
                   country={quickAnalysisData?.country}
                 />
-              )}
-              
-              {documentAnalysisResult && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Document Analysis Results</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold mb-2">Summary</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {documentAnalysisResult.summary}
-                      </p>
-                    </div>
-                    
-                    {documentAnalysisResult.gaps?.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-2">Coverage Gaps</h3>
-                        <ul className="space-y-1">
-                          {documentAnalysisResult.gaps.map((gap: string, index: number) => (
-                            <li key={index} className="text-sm text-muted-foreground">
-                              • {gap}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {documentAnalysisResult.recommendations?.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-2">Recommendations</h3>
-                        <ul className="space-y-1">
-                          {documentAnalysisResult.recommendations.map((rec: string, index: number) => (
-                            <li key={index} className="text-sm text-muted-foreground">
-                              • {rec}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
               )}
             </TabsContent>
 
@@ -258,17 +214,10 @@ const DocumentUploadSection = () => {
                       
                       <Button 
                         className="w-full mt-4" 
-                        disabled={uploadedFiles.length === 0 || isAnalyzing}
+                        disabled={uploadedFiles.length === 0 || !onFileAdded}
                         onClick={handleDocumentAnalysis}
                       >
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Analyzing...
-                          </>
-                        ) : (
-                          "Analyze Documents"
-                        )}
+                        Analyze Documents
                       </Button>
                     </div>
                   )}

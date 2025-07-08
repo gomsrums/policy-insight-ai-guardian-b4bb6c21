@@ -276,7 +276,7 @@ Policy Period: January 1, 2024 to January 1, 2025
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <div className="lg:col-span-1 space-y-6">
-              <DocumentUploadSection />
+              <DocumentUploadSection onFileAdded={handleFileAdded} />
             </div>
             
             <div className="lg:col-span-2">
