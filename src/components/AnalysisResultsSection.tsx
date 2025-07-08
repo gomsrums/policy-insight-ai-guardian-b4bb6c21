@@ -25,22 +25,25 @@ const AnalysisResultsSection = ({
     <Card className="h-full shadow-lg border-0 bg-card">
       <CardContent className="p-6">
         {!analysisResult && !isAnalyzing && (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">🤖</span>
+          <div className="h-full">
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🤖</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Chat with AI Assistant
+              </h3>
+              <p className="text-muted-foreground text-sm mb-6">
+                Ask questions about insurance policies, coverage, or get general advice
+              </p>
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-4">
-              Ready for AI Analysis
-            </h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              Upload your insurance policy to get comprehensive AI-powered analysis and chat capabilities
-            </p>
-            <Button 
-              variant="outline"
-              onClick={onUseSampleText}
-            >
-              Try Sample Policy
-            </Button>
+            <div className="h-[calc(100vh-400px)] min-h-[400px]">
+              <ChatInterface 
+                sourceId={null}
+                onSendMessage={onSendMessage}
+                isLoading={isChatting}
+              />
+            </div>
           </div>
         )}
         
