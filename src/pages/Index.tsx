@@ -242,27 +242,27 @@ Policy Period: January 1, 2024 to January 1, 2025
       const documentId = analysisResult?.document_id;
       
       if (!documentId) {
-        // General insurance chat without document
-        const response = await fetch('https://takieoywodunrjoteclz.supabase.co/functions/v1/chat-with-policy', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRha2llb3l3b2R1bnJqb3RlY2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0OTcxNTIsImV4cCI6MjA2NDA3MzE1Mn0.IQW2ybt6H5k7E5kaTNbbz3aH6xbxFI8mg1hvorROxY4`
-          },
-          body: JSON.stringify({
-            question: message,
-            documentContext: '',
-            knowledgeContext: 'You are an expert insurance advisor. Provide helpful information about insurance policies, coverage types, claims processes, and general insurance advice.'
-          })
-        });
+        // Simple response for general insurance questions without external API calls
+        return `I'm here to help with your insurance questions! Here are some common topics I can assist with:
 
-        if (!response.ok) {
-          throw new Error('Failed to get response');
-        }
+**Insurance Basics:**
+- Deductibles: This is the amount you pay out-of-pocket before your insurance coverage kicks in
+- Premiums: The monthly/yearly cost of your insurance policy
+- Coverage limits: The maximum amount your insurer will pay for covered claims
 
-        const data = await response.json();
-        analytics.trackEvent('chat_response_received', { response_length: data.response.length });
-        return data.response;
+**Policy Types:**
+- Auto insurance: Covers vehicle damage and liability
+- Home insurance: Protects your property and belongings
+- Life insurance: Provides financial security for beneficiaries
+- Health insurance: Covers medical expenses
+
+**Claims Process:**
+- Report incidents promptly to your insurer
+- Document everything with photos and receipts
+- Work with adjusters for damage assessments
+- Keep records of all communications
+
+Please upload your policy document for specific analysis, or ask me any specific insurance question you have in mind!`;
       }
       
       const response = await sendChatMessage(documentId, message);
