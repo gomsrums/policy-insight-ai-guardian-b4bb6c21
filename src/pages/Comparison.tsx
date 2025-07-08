@@ -4,15 +4,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import PolicyExtractionDemo from "@/components/PolicyExtractionDemo";
+import SimpleComparisonForm, { ComparisonData } from "@/components/SimpleComparisonForm";
+import SimpleComparisonResults from "@/components/SimpleComparisonResults";
 import ParameterWeightSelector from "@/components/ParameterWeightSelector";
 import { PolicyComparisonCriteria, DEFAULT_PARAMETER_WEIGHTS } from "@/types/comparison";
+import { simpleComparisonEngine } from "@/services/simpleComparisonEngine";
 import FancyBackground from "@/components/FancyBackground";
 
 const Comparison = () => {
   const [parameterWeights, setParameterWeights] = useState<PolicyComparisonCriteria>(DEFAULT_PARAMETER_WEIGHTS);
   const [selectedMarket, setSelectedMarket] = useState<'US' | 'UK' | 'India'>('US');
+  const [isComparing, setIsComparing] = useState(false);
+  const [comparisonResult, setComparisonResult] = useState<any>(null);
+  const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const { isAuthenticated } = useAuth();
+
+  const handleCompare = async (data: ComparisonData) => {
+    setIsComparing(true);
+    setComparisonData(data);
+    
+    try {
+      const result = await simpleComparisonEngine.comparePolicy(data);
+      setComparisonResult(result);
+    } catch (error) {
+      console.error('Comparison failed:', error);
+    } finally {
+      setIsComparing(false);
+    }
+  };
 
   return (
     <FancyBackground>
@@ -78,14 +97,22 @@ const Comparison = () => {
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="extraction" className="w-full">
+          <Tabs defaultValue="comparison" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="extraction">Data Extraction & Comparison</TabsTrigger>
+              <TabsTrigger value="comparison">Policy Comparison</TabsTrigger>
               <TabsTrigger value="parameters">Parameter Configuration</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="extraction">
-              <PolicyExtractionDemo />
+            <TabsContent value="comparison">
+              <div className="space-y-6">
+                <SimpleComparisonForm onCompare={handleCompare} isComparing={isComparing} />
+                {comparisonResult && comparisonData && (
+                  <SimpleComparisonResults 
+                    comparison={comparisonResult} 
+                    originalData={comparisonData}
+                  />
+                )}
+              </div>
             </TabsContent>
             
             <TabsContent value="parameters">
