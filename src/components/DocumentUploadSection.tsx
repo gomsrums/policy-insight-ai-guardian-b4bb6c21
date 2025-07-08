@@ -61,9 +61,9 @@ const DocumentUploadSection = () => {
     
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const result = quickAnalysisEngine.analyzePolicy(data);
+      const result = await quickAnalysisEngine.analyzePolicy(data);
       setAnalysisResult(result);
     } catch (error) {
       console.error('Analysis failed:', error);

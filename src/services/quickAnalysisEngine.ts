@@ -140,13 +140,13 @@ class QuickAnalysisEngine {
   /**
    * Main analysis function that processes form data and returns insights
    */
-  public analyzePolicy(data: QuickAnalysisData): QuickAnalysisResult {
+   public async analyzePolicy(data: QuickAnalysisData): Promise<QuickAnalysisResult> {
     console.log('Analyzing policy data:', data);
     
     const scores = this.calculateScores(data);
     const benchmarks = this.getBenchmarks(data.policyType, data.country);
     const insights = this.generateInsights(data, scores, benchmarks);
-    const recommendations = this.generateRecommendations(data, scores, benchmarks);
+    const recommendations = await this.generateRecommendations(data, scores, benchmarks);
     
     const overallScore = this.calculateOverallScore(scores);
     const riskLevel = this.determineRiskLevel(overallScore, scores);
@@ -368,9 +368,57 @@ class QuickAnalysisEngine {
   }
   
   /**
-   * Generate actionable recommendations
+   * Generate actionable recommendations using AI analysis
    */
-  private generateRecommendations(data: QuickAnalysisData, scores: any, benchmarks: any): string[] {
+  private async generateRecommendations(data: QuickAnalysisData, scores: any, benchmarks: any): Promise<string[]> {
+    try {
+      // Try to get AI-powered personalized recommendations
+      const aiRecommendations = await this.getAIRecommendations(data, scores, benchmarks);
+      if (aiRecommendations && aiRecommendations.length > 0) {
+        return aiRecommendations;
+      }
+    } catch (error) {
+      console.warn('AI recommendations failed, falling back to rule-based:', error);
+    }
+
+    // Fallback to rule-based recommendations
+    return this.getRuleBasedRecommendations(data, scores, benchmarks);
+  }
+
+  /**
+   * Get AI-powered personalized recommendations
+   */
+  private async getAIRecommendations(data: QuickAnalysisData, scores: any, benchmarks: any): Promise<string[]> {
+    const response = await fetch('https://takieoywodunyoteclz.supabase.co/functions/v1/generate-personalized-recommendations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRha2llb3l3b2R1bnJqb3RlY2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0OTcxNTIsImV4cCI6MjA2NDA3MzE1Mn0.IQW2ybt6H5k7E5kaTNbbz3aH6xbxFI8mg1hvorROxY4`
+      },
+      body: JSON.stringify({
+        policyType: data.policyType,
+        monthlyPremium: data.monthlyPremium,
+        coverageAmount: data.coverageAmount,
+        deductible: data.deductible,
+        country: data.country,
+        additionalDetails: data.additionalDetails,
+        scores,
+        benchmarks
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`AI recommendation service error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.recommendations || [];
+  }
+
+  /**
+   * Fallback rule-based recommendations
+   */
+  private getRuleBasedRecommendations(data: QuickAnalysisData, scores: any, benchmarks: any): string[] {
     const recommendations: string[] = [];
     const countryName = this.getCountryName(data.country);
     
