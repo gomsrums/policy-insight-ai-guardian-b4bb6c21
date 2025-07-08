@@ -26,6 +26,9 @@ interface RecommendationRequest {
   };
 }
 
+const CHATPDF_API_KEY = "sec_t759nqrP5IPLQM9ssZXIx0aHIK0hiv3k";
+const CHATPDF_BASE_URL = "https://api.chatpdf.com/v1";
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,41 +36,66 @@ serve(async (req) => {
 
   try {
     const data: RecommendationRequest = await req.json();
-    const hfToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
     
-    if (!hfToken) {
-      throw new Error('Hugging Face API token not configured');
+    if (!CHATPDF_API_KEY) {
+      throw new Error('ChatPDF API key not configured');
+    }
+
+    // Create a temporary document with the policy analysis data
+    const policyAnalysisText = createPolicyAnalysisDocument(data);
+    
+    // Upload the policy analysis as a text document to ChatPDF
+    const formData = new FormData();
+    const textFile = new Blob([policyAnalysisText], { type: "text/plain" });
+    formData.append("file", textFile, "policy-analysis.txt");
+
+    const uploadResponse = await fetch(`${CHATPDF_BASE_URL}/sources/add-file`, {
+      method: "POST",
+      headers: {
+        "x-api-key": CHATPDF_API_KEY,
+      },
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.text();
+      throw new Error(`ChatPDF upload failed: ${uploadResponse.status} - ${errorData}`);
+    }
+
+    const uploadData = await uploadResponse.json();
+    const sourceId = uploadData.sourceId;
+
+    if (!sourceId) {
+      throw new Error("No source ID returned from ChatPDF upload");
     }
 
     // Create a comprehensive analysis prompt
     const analysisPrompt = createAnalysisPrompt(data);
 
-    const response = await fetch(
-      'https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3.1-70B-Instruct',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${hfToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          inputs: analysisPrompt,
-          parameters: {
-            max_new_tokens: 800,
-            temperature: 0.1,
-            do_sample: false,
-            return_full_text: false
-          }
-        }),
-      }
-    );
+    const response = await fetch(`${CHATPDF_BASE_URL}/chats/message`, {
+      method: "POST",
+      headers: {
+        "x-api-key": CHATPDF_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sourceId: sourceId,
+        messages: [
+          {
+            role: "user",
+            content: analysisPrompt,
+          },
+        ],
+      }),
+    });
 
     if (!response.ok) {
-      throw new Error(`HF API error: ${response.status}`);
+      const errorData = await response.text();
+      throw new Error(`ChatPDF analysis failed: ${response.status} - ${errorData}`);
     }
 
     const result = await response.json();
-    let recommendations = result[0]?.generated_text || '';
+    let recommendations = result.content || '';
     
     // Clean up the response and format it properly
     recommendations = recommendations.trim();
@@ -98,7 +126,7 @@ serve(async (req) => {
   }
 });
 
-function createAnalysisPrompt(data: RecommendationRequest): string {
+function createPolicyAnalysisDocument(data: RecommendationRequest): string {
   const countryNames: Record<string, string> = {
     US: 'United States', UK: 'United Kingdom', CA: 'Canada', AU: 'Australia',
     DE: 'Germany', FR: 'France', IN: 'India', JP: 'Japan', SG: 'Singapore'
@@ -107,9 +135,9 @@ function createAnalysisPrompt(data: RecommendationRequest): string {
   const countryName = countryNames[data.country] || data.country;
   const annualPremium = data.monthlyPremium * 12;
   
-  return `You are an expert insurance advisor analyzing a ${data.policyType} insurance policy for a client in ${countryName}.
+  return `INSURANCE POLICY ANALYSIS REPORT
 
-CLIENT'S POLICY DETAILS:
+POLICY DETAILS:
 - Policy Type: ${data.policyType} insurance
 - Monthly Premium: $${data.monthlyPremium} (Annual: $${annualPremium})
 - Coverage Amount: $${data.coverageAmount.toLocaleString()}
@@ -118,17 +146,33 @@ CLIENT'S POLICY DETAILS:
 ${data.additionalDetails ? `- Additional Context: ${data.additionalDetails}` : ''}
 
 CURRENT ANALYSIS SCORES (out of 10):
-- Affordability: ${data.scores.affordability}/10
-- Coverage Adequacy: ${data.scores.coverage}/10
-- Deductible Optimization: ${data.scores.deductible}/10
-- Value for Money: ${data.scores.value}/10
+- Affordability Score: ${data.scores.affordability}/10
+- Coverage Adequacy Score: ${data.scores.coverage}/10
+- Deductible Optimization Score: ${data.scores.deductible}/10
+- Value for Money Score: ${data.scores.value}/10
 
 ${countryName.toUpperCase()} MARKET BENCHMARKS:
-- Average Premium: $${data.benchmarks.averagePremium}/year
-- Recommended Coverage: $${data.benchmarks.recommendedCoverage.toLocaleString()}
-- Optimal Deductible: $${data.benchmarks.optimalDeductible}
+- Average Premium in Market: $${data.benchmarks.averagePremium}/year
+- Recommended Coverage Amount: $${data.benchmarks.recommendedCoverage.toLocaleString()}
+- Optimal Deductible Range: $${data.benchmarks.optimalDeductible}
 
-TASK: Provide 5-8 specific, actionable recommendations tailored to this client's situation. Consider:
+AREAS FOR ANALYSIS:
+This policy analysis document provides the foundation for generating personalized recommendations based on the client's specific situation, market conditions, and identified gaps or opportunities for improvement.
+`;
+}
+
+function createAnalysisPrompt(data: RecommendationRequest): string {
+  const countryNames: Record<string, string> = {
+    US: 'United States', UK: 'United Kingdom', CA: 'Canada', AU: 'Australia',
+    DE: 'Germany', FR: 'France', IN: 'India', JP: 'Japan', SG: 'Singapore'
+  };
+
+  const countryName = countryNames[data.country] || data.country;
+  
+  return `You are an expert insurance advisor analyzing this ${data.policyType} insurance policy for a client in ${countryName}.
+
+Based on the policy analysis document provided, please generate 5-8 specific, actionable recommendations tailored to this client's situation. Consider:
+
 1. Their specific financial situation and policy details
 2. ${countryName} insurance regulations and market conditions
 3. Areas where scores are low and need improvement
@@ -136,5 +180,7 @@ TASK: Provide 5-8 specific, actionable recommendations tailored to this client's
 5. Coverage gaps or risks specific to their situation
 6. Any concerns mentioned in additional details
 
-Format your response as a numbered list of specific recommendations. Each recommendation should be practical and actionable, not generic advice. Focus on this client's unique situation.`;
+TASK: Provide specific, actionable recommendations. Each recommendation should be practical and actionable, not generic advice. Focus on this client's unique situation based on their scores, premiums, coverage amounts, and country-specific factors.
+
+Format your response as a numbered list of specific recommendations. Be direct and actionable.`;
 }

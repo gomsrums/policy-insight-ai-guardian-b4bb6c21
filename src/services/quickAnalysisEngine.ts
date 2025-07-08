@@ -389,7 +389,7 @@ class QuickAnalysisEngine {
    * Get AI-powered personalized recommendations
    */
   private async getAIRecommendations(data: QuickAnalysisData, scores: any, benchmarks: any): Promise<string[]> {
-    const response = await fetch('https://takieoywodunyoteclz.supabase.co/functions/v1/generate-personalized-recommendations', {
+    const response = await fetch('https://takieoywodunoterclz.supabase.co/functions/v1/generate-personalized-recommendations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import QuickAnalysisForm, { QuickAnalysisData } from "./QuickAnalysisForm";
 import QuickAnalysisResults from "./QuickAnalysisResults";
 import { quickAnalysisEngine, QuickAnalysisResult } from "@/services/quickAnalysisEngine";
+import { uploadDocumentForAnalysis } from "@/services/chatpdf-api";
+import { PolicyDocument } from "@/lib/chatpdf-types";
 
 const DocumentUploadSection = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -17,6 +19,7 @@ const DocumentUploadSection = () => {
   const [analysisResult, setAnalysisResult] = useState<QuickAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [quickAnalysisData, setQuickAnalysisData] = useState<QuickAnalysisData | null>(null);
+  const [documentAnalysisResult, setDocumentAnalysisResult] = useState<any>(null);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -77,6 +80,33 @@ const DocumentUploadSection = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDocumentAnalysis = async () => {
+    if (uploadedFiles.length === 0) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const file = uploadedFiles[0]; // Analyze the first uploaded file
+      
+      const policyDocument: PolicyDocument = {
+        id: `doc-${Date.now()}`,
+        name: file.name,
+        type: "file",
+        file: file,
+        status: "processing"
+      };
+      
+      const result = await uploadDocumentForAnalysis(policyDocument);
+      setDocumentAnalysisResult(result);
+      
+      console.log("Document analysis completed:", result);
+    } catch (error) {
+      console.error("Document analysis failed:", error);
+      // Handle error appropriately
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       <Card>
@@ -106,6 +136,48 @@ const DocumentUploadSection = () => {
                   result={analysisResult} 
                   country={quickAnalysisData?.country}
                 />
+              )}
+              
+              {documentAnalysisResult && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Document Analysis Results</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">Summary</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {documentAnalysisResult.summary}
+                      </p>
+                    </div>
+                    
+                    {documentAnalysisResult.gaps?.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold mb-2">Coverage Gaps</h3>
+                        <ul className="space-y-1">
+                          {documentAnalysisResult.gaps.map((gap: string, index: number) => (
+                            <li key={index} className="text-sm text-muted-foreground">
+                              • {gap}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {documentAnalysisResult.recommendations?.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold mb-2">Recommendations</h3>
+                        <ul className="space-y-1">
+                          {documentAnalysisResult.recommendations.map((rec: string, index: number) => (
+                            <li key={index} className="text-sm text-muted-foreground">
+                              • {rec}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
 
@@ -184,8 +256,19 @@ const DocumentUploadSection = () => {
                         </div>
                       ))}
                       
-                      <Button className="w-full mt-4" disabled={uploadedFiles.length === 0}>
-                        Analyze Documents
+                      <Button 
+                        className="w-full mt-4" 
+                        disabled={uploadedFiles.length === 0 || isAnalyzing}
+                        onClick={handleDocumentAnalysis}
+                      >
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Analyzing...
+                          </>
+                        ) : (
+                          "Analyze Documents"
+                        )}
                       </Button>
                     </div>
                   )}
