@@ -51,11 +51,11 @@ const Header = () => {
             Comparison
           </Link>
           <Link 
-            to="/brokers" 
+            to="/cyber-insurance" 
             className="text-insurance-gray hover:text-insurance-blue transition-colors"
-            onClick={() => handleNavClick('brokers')}
+            onClick={() => handleNavClick('cyber-insurance')}
           >
-            Brokers
+            Cyber Insurance AI
           </Link>
           
           {/* Admin Link - Only visible to admin */}
