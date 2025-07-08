@@ -31,7 +31,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
   }, [sourceId, user?.id]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !sourceId) return;
+    if (!message.trim()) return;
 
     const userMessage: ChatMessage = {
       id: nanoid(),
@@ -140,10 +140,10 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
       
       <div className="flex gap-2">
         <Textarea
-          placeholder="Ask a question about your policy..."
+          placeholder={sourceId ? "Ask a question about your policy..." : "Ask a question about insurance..."}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          disabled={!sourceId || isLoading}
+          disabled={isLoading}
           className="flex-grow"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -154,7 +154,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         />
         <Button
           onClick={handleSendMessage}
-          disabled={!message.trim() || !sourceId || isLoading}
+          disabled={!message.trim() || isLoading}
           className="self-end"
         >
           <Send className="h-4 w-4" />

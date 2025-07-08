@@ -242,7 +242,27 @@ Policy Period: January 1, 2024 to January 1, 2025
       const documentId = analysisResult?.document_id;
       
       if (!documentId) {
-        return "Please upload and process a document first before asking questions.";
+        // General insurance chat without document
+        const response = await fetch('https://takieoywodunrjoteclz.supabase.co/functions/v1/chat-with-policy', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRha2llb3l3b2R1bnJqb3RlY2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0OTcxNTIsImV4cCI6MjA2NDA3MzE1Mn0.IQW2ybt6H5k7E5kaTNbbz3aH6xbxFI8mg1hvorROxY4`
+          },
+          body: JSON.stringify({
+            question: message,
+            documentContext: '',
+            knowledgeContext: 'You are an expert insurance advisor. Provide helpful information about insurance policies, coverage types, claims processes, and general insurance advice.'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get response');
+        }
+
+        const data = await response.json();
+        analytics.trackEvent('chat_response_received', { response_length: data.response.length });
+        return data.response;
       }
       
       const response = await sendChatMessage(documentId, message);

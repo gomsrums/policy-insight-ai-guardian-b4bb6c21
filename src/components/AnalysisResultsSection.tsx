@@ -39,7 +39,7 @@ const AnalysisResultsSection = ({
             </div>
             <div className="h-[calc(100vh-400px)] min-h-[400px]">
               <ChatInterface 
-                sourceId={null}
+                sourceId="general-chat"
                 onSendMessage={onSendMessage}
                 isLoading={isChatting}
               />
