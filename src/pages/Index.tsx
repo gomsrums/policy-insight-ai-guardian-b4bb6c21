@@ -8,6 +8,7 @@ import DocumentUploadSection from "@/components/DocumentUploadSection";
 import AnalysisResultsSection from "@/components/AnalysisResultsSection";
 import FooterSection from "@/components/FooterSection";
 import LoginDialog from "@/components/LoginDialog";
+import { InsuranceChatbot } from "@/components/InsuranceChatbot";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
@@ -404,7 +405,7 @@ For detailed analysis of your specific policy, please upload your policy documen
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
+    <div className="min-h-screen">
       <Header />
       
       <HeroSection onUseSampleText={handleUseSampleText} />
@@ -430,6 +431,8 @@ For detailed analysis of your specific policy, please upload your policy documen
       </main>
       
       <FooterSection />
+      
+      <InsuranceChatbot />
       
       <LoginDialog 
         isOpen={showLoginDialog} 
