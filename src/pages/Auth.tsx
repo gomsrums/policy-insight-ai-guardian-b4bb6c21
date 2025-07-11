@@ -116,7 +116,7 @@ const Auth = () => {
         
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-insurance-blue-dark">PolicyCheck</CardTitle>
+            <CardTitle className="text-2xl text-insurance-blue-dark">Know your Insurance</CardTitle>
             <CardDescription>
               Access your insurance policy analyzer
             </CardDescription>

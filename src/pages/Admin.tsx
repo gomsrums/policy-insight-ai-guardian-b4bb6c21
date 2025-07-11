@@ -78,7 +78,7 @@ const Admin = () => {
             <h1 className="text-3xl font-bold text-insurance-blue-dark">Admin Dashboard</h1>
             <Badge variant="secondary" className="ml-2">Administrator</Badge>
           </div>
-          <p className="text-insurance-gray">Welcome to the PolicyCheck admin panel</p>
+          <p className="text-insurance-gray">Welcome to the Know your Insurance admin panel</p>
         </div>
 
         {/* Stats Overview */}
