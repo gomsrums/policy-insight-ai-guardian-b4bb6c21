@@ -31,53 +31,46 @@ const About = () => {
             </CardContent>
           </Card>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>How It Works</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex flex-col items-center text-center">
-                    <img src={step1Upload} alt="Step 1: Upload Document" className="w-full h-32 object-cover rounded-lg mb-3" />
-                    <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mb-2">1</div>
-                    <h3 className="font-semibold mb-1">Upload Policy</h3>
-                    <p className="text-sm text-muted-foreground">Upload your insurance policy document or paste the text</p>
-                  </div>
-                  
-                  <div className="flex flex-col items-center text-center">
-                    <img src={step2Analysis} alt="Step 2: AI Analysis" className="w-full h-32 object-cover rounded-lg mb-3" />
-                    <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mb-2">2</div>
-                    <h3 className="font-semibold mb-1">AI Analysis</h3>
-                    <p className="text-sm text-muted-foreground">Our AI analyzes your coverage details</p>
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>How It Works</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-6">
+                {/* First Row */}
+                <div className="flex flex-col items-center text-center">
+                  <img src={step1Upload} alt="Step 1: Upload Document" className="w-20 h-20 object-cover rounded-lg mb-3" />
+                  <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mb-2">1</div>
+                  <h3 className="font-semibold mb-1 text-sm">Upload Policy</h3>
+                  <p className="text-xs text-muted-foreground">Upload your insurance policy document</p>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>&nbsp;</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex flex-col items-center text-center">
-                    <img src={step3Review} alt="Step 3: Review Results" className="w-full h-32 object-cover rounded-lg mb-3" />
-                    <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mb-2">3</div>
-                    <h3 className="font-semibold mb-1">Review Analysis</h3>
-                    <p className="text-sm text-muted-foreground">Review the analysis highlighting coverage gaps and potential overpayments</p>
-                  </div>
-                  
-                  <div className="flex flex-col items-center text-center">
-                    <img src={step4Decisions} alt="Step 4: Make Decisions" className="w-full h-32 object-cover rounded-lg mb-3" />
-                    <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mb-2">4</div>
-                    <h3 className="font-semibold mb-1">Make Decisions</h3>
-                    <p className="text-sm text-muted-foreground">Use our recommendations to make informed decisions</p>
-                  </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <img src={step2Analysis} alt="Step 2: AI Analysis" className="w-20 h-20 object-cover rounded-lg mb-3" />
+                  <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mb-2">2</div>
+                  <h3 className="font-semibold mb-1 text-sm">AI Analysis</h3>
+                  <p className="text-xs text-muted-foreground">Our AI analyzes your coverage</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                
+                {/* Second Row */}
+                <div className="flex flex-col items-center text-center">
+                  <img src={step3Review} alt="Step 3: Review Results" className="w-20 h-20 object-cover rounded-lg mb-3" />
+                  <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mb-2">3</div>
+                  <h3 className="font-semibold mb-1 text-sm">Review Analysis</h3>
+                  <p className="text-xs text-muted-foreground">Review gaps and recommendations</p>
+                </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <img src={step4Decisions} alt="Step 4: Make Decisions" className="w-20 h-20 object-cover rounded-lg mb-3" />
+                  <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mb-2">4</div>
+                  <h3 className="font-semibold mb-1 text-sm">Make Decisions</h3>
+                  <p className="text-xs text-muted-foreground">Use recommendations wisely</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="mb-8"></div>
           
           <Card className="mb-6">
             <CardHeader>
