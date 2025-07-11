@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTrialAccess } from "@/hooks/useTrialAccess";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import DocumentUploadSection from "@/components/DocumentUploadSection";
@@ -23,6 +24,7 @@ const Index = () => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
+  const { canUseFeature, useFeature } = useTrialAccess();
 
   // Track page view on component mount
   useEffect(() => {
@@ -77,12 +79,18 @@ Policy Period: January 1, 2024 to January 1, 2025
     }
   }, [analysisResult?.document_id]);
 
-  const requireAuth = (action: () => void) => {
-    if (!isAuthenticated) {
+  const requireAuth = (action: () => void, feature: 'documentUpload' | 'quickAnalysis' | 'chatMessages') => {
+    if (!isAuthenticated && !canUseFeature(feature)) {
       setShowLoginDialog(true);
-      analytics.trackEvent('auth_required', { action: 'document_analysis' });
+      analytics.trackEvent('auth_required', { action: feature });
       return;
     }
+    
+    if (!isAuthenticated) {
+      // Use trial access
+      useFeature(feature);
+    }
+    
     action();
   };
 
@@ -91,7 +99,7 @@ Policy Period: January 1, 2024 to January 1, 2025
       setDocuments([newDocument]);
       analytics.trackDocumentUpload('file');
       analyzeDocumentForChat(newDocument);
-    });
+    }, 'documentUpload');
   };
 
   const handleTextAdded = (newDocument: PolicyDocument) => {
@@ -99,7 +107,7 @@ Policy Period: January 1, 2024 to January 1, 2025
       setDocuments([newDocument]);
       analytics.trackDocumentUpload('text');
       analyzeDocumentForChat(newDocument);
-    });
+    }, 'documentUpload');
   };
 
   const handleUseSampleText = () => {
@@ -114,7 +122,7 @@ Policy Period: January 1, 2024 to January 1, 2025
       setDocuments([sampleDocument]);
       analytics.trackDocumentUpload('sample');
       analyzeDocumentForChat(sampleDocument);
-    });
+    }, 'documentUpload');
   };
 
   const handleRemoveDocument = (id: string) => {
@@ -229,10 +237,14 @@ Policy Period: January 1, 2024 to January 1, 2025
   };
 
   const handleSendMessage = async (message: string) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !canUseFeature('chatMessages')) {
       setShowLoginDialog(true);
       analytics.trackEvent('auth_required', { action: 'chat_message' });
-      return "Please sign in to ask questions about your policy.";
+      return "Please sign in to continue chatting about your policy.";
+    }
+    
+    if (!isAuthenticated) {
+      useFeature('chatMessages');
     }
 
     setIsChatting(true);

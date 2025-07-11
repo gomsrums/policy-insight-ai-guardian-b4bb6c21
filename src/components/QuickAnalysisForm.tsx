@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useTrialAccess } from "@/hooks/useTrialAccess";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,7 @@ const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) =
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const { canUseFeature, getRemainingUses, isAuthenticated } = useTrialAccess();
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -79,6 +81,11 @@ const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) =
         <p className="text-sm text-muted-foreground">
           Enter your policy details for instant AI-powered insights
         </p>
+        {!isAuthenticated && (
+          <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+            Trial: {getRemainingUses('quickAnalysis')} free analysis remaining. Sign in for unlimited access.
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -183,13 +190,15 @@ const QuickAnalysisForm = ({ onAnalyze, isAnalyzing }: QuickAnalysisFormProps) =
           <Button 
             type="submit" 
             className="w-full" 
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || (!isAuthenticated && !canUseFeature('quickAnalysis'))}
           >
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Analyzing...
               </>
+            ) : !isAuthenticated && !canUseFeature('quickAnalysis') ? (
+              'Sign in to Continue'
             ) : (
               'Analyze Insurance'
             )}

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTrialAccess } from "@/hooks/useTrialAccess";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ const DocumentUploadSection = ({ onFileAdded }: DocumentUploadSectionProps) => {
   const [analysisResult, setAnalysisResult] = useState<QuickAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [quickAnalysisData, setQuickAnalysisData] = useState<QuickAnalysisData | null>(null);
+  const { canUseFeature, useFeature, getRemainingUses, isAuthenticated } = useTrialAccess();
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -69,6 +71,15 @@ const DocumentUploadSection = ({ onFileAdded }: DocumentUploadSectionProps) => {
   }, []);
 
   const handleQuickAnalysis = useCallback(async (data: QuickAnalysisData) => {
+    if (!isAuthenticated && !canUseFeature('quickAnalysis')) {
+      // This will be handled by the parent component's auth flow
+      return;
+    }
+
+    if (!isAuthenticated) {
+      useFeature('quickAnalysis');
+    }
+
     setIsAnalyzing(true);
     setQuickAnalysisData(data);
     
@@ -84,7 +95,7 @@ const DocumentUploadSection = ({ onFileAdded }: DocumentUploadSectionProps) => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, []);
+  }, [canUseFeature, useFeature, isAuthenticated]);
 
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
@@ -144,6 +155,11 @@ const DocumentUploadSection = ({ onFileAdded }: DocumentUploadSectionProps) => {
                   <p className="text-sm text-muted-foreground">
                     Upload PDF files or images of your insurance policies for detailed analysis
                   </p>
+                  {!isAuthenticated && (
+                    <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded mt-2">
+                      Trial: {getRemainingUses('documentUpload')} free document analysis remaining. Sign in for unlimited access.
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
@@ -165,7 +181,7 @@ const DocumentUploadSection = ({ onFileAdded }: DocumentUploadSectionProps) => {
                       />
                       <Button 
                         variant="outline" 
-                        disabled={isUploading}
+                        disabled={isUploading || (!isAuthenticated && !canUseFeature('documentUpload'))}
                         onClick={() => document.getElementById('file-upload')?.click()}
                       >
                         {isUploading ? (
@@ -173,6 +189,8 @@ const DocumentUploadSection = ({ onFileAdded }: DocumentUploadSectionProps) => {
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Uploading...
                           </>
+                        ) : !isAuthenticated && !canUseFeature('documentUpload') ? (
+                          'Sign in to Continue'
                         ) : (
                           <>
                             <Upload className="mr-2 h-4 w-4" />

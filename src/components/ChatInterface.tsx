@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { useTrialAccess } from "@/hooks/useTrialAccess";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
@@ -19,6 +20,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const { user } = useAuth();
+  const { canUseFeature, getRemainingUses, isAuthenticated } = useTrialAccess();
 
   // Load chat history from temporary storage when sourceId changes
   useEffect(() => {
@@ -89,6 +91,11 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
           <span className="block text-xs text-gray-400 mt-1">
             Chat history is kept for 10 minutes during your session
           </span>
+          {!isAuthenticated && (
+            <span className="block text-xs text-orange-600 bg-orange-50 p-1 rounded mt-1">
+              Trial: {getRemainingUses('chatMessages')} free message remaining
+            </span>
+          )}
         </p>
       </div>
       
@@ -154,7 +161,7 @@ const ChatInterface = ({ sourceId, onSendMessage, isLoading }: ChatInterfaceProp
         />
         <Button
           onClick={handleSendMessage}
-          disabled={!message.trim() || isLoading}
+          disabled={!message.trim() || isLoading || (!isAuthenticated && !canUseFeature('chatMessages'))}
           className="self-end"
         >
           <Send className="h-4 w-4" />
