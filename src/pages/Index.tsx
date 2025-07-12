@@ -9,7 +9,7 @@ import AnalysisResultsSection from "@/components/AnalysisResultsSection";
 import FooterSection from "@/components/FooterSection";
 import LoginDialog from "@/components/LoginDialog";
 import { InsuranceChatbot } from "@/components/InsuranceChatbot";
-import SocialMediaContentGenerator from "@/components/SocialMediaContentGenerator";
+
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
@@ -430,8 +430,6 @@ For detailed analysis of your specific policy, please upload your policy documen
           </div>
         </div>
       </main>
-      
-      <SocialMediaContentGenerator />
       
       <FooterSection />
       
