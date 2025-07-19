@@ -9,6 +9,8 @@ import AnalysisResultsSection from "@/components/AnalysisResultsSection";
 import FooterSection from "@/components/FooterSection";
 import LoginDialog from "@/components/LoginDialog";
 import { InsuranceChatbot } from "@/components/InsuranceChatbot";
+import { Card } from "@/components/ui/card";
+import { Shield, FileText, BarChart3, MessageCircle } from "lucide-react";
 
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
@@ -410,6 +412,60 @@ For detailed analysis of your specific policy, please upload your policy documen
       <Header />
       
       <HeroSection onUseSampleText={handleUseSampleText} />
+
+      {/* Features Section */}
+      <section className="py-12 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Insurance Services</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Comprehensive AI-powered insurance solutions for all your needs
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+              <div className="flex items-center mb-4">
+                <FileText className="h-8 w-8 text-primary mr-3 group-hover:scale-110 transition-transform" />
+                <h3 className="text-xl font-semibold">Policy Analysis</h3>
+              </div>
+              <p className="text-muted-foreground">
+                Upload your insurance policy and get detailed analysis with gap identification and recommendations.
+              </p>
+            </Card>
+
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => window.location.href = '/comparison'}>
+              <div className="flex items-center mb-4">
+                <BarChart3 className="h-8 w-8 text-primary mr-3 group-hover:scale-110 transition-transform" />
+                <h3 className="text-xl font-semibold">Policy Comparison</h3>
+              </div>
+              <p className="text-muted-foreground">
+                Compare multiple insurance policies side by side to find the best coverage for your needs.
+              </p>
+            </Card>
+
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => window.location.href = '/cyber-insurance'}>
+              <div className="flex items-center mb-4">
+                <Shield className="h-8 w-8 text-primary mr-3 group-hover:scale-110 transition-transform" />
+                <h3 className="text-xl font-semibold">Cyber Insurance</h3>
+              </div>
+              <p className="text-muted-foreground">
+                AI-powered cyber insurance risk assessment for startups with instant quotes and real-time analysis.
+              </p>
+            </Card>
+
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+              <div className="flex items-center mb-4">
+                <MessageCircle className="h-8 w-8 text-primary mr-3 group-hover:scale-110 transition-transform" />
+                <h3 className="text-xl font-semibold">AI Assistant</h3>
+              </div>
+              <p className="text-muted-foreground">
+                Chat with our AI assistant to get instant answers about your insurance policies and coverage.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
 
       <main className="container mx-auto py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
