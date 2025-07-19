@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, User, Loader2, Shield } from "lucide-react";
-import EmailSubscription from "@/components/EmailSubscription";
 import { analytics } from "@/services/analytics";
 
 const Header = () => {
@@ -101,7 +100,6 @@ const Header = () => {
               >
                 <Link to="/auth">Sign In</Link>
               </Button>
-              <EmailSubscription />
             </div>
           )}
         </nav>
