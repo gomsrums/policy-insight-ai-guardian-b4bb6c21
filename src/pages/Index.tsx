@@ -467,97 +467,21 @@ For detailed analysis of your specific policy, please upload your policy documen
         </div>
       </section>
 
-      {/* GDPR Benefits Section */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">100% Privacy Compliant</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Your documents stay private and secure with our GDPR-compliant local processing
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🔒</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">100% Local Processing</h3>
-              <p className="text-muted-foreground">
-                Documents never leave your device. All analysis happens locally in your browser.
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🛡️</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">No Data Transmission</h3>
-              <p className="text-muted-foreground">
-                Zero external API calls for document content. Your data stays with you.
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">📋</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Clear Privacy Notice</h3>
-              <p className="text-muted-foreground">
-                You know exactly how your data is handled with full transparency.
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">💾</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">No Storage</h3>
-              <p className="text-muted-foreground">
-                No documents stored on servers. Complete privacy guaranteed.
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">📄</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Local Reports</h3>
-              <p className="text-muted-foreground">
-                Analysis results can be downloaded locally to your device.
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">✅</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">GDPR Compliant</h3>
-              <p className="text-muted-foreground">
-                Fully compliant with European data protection regulations.
-              </p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
       <main className="container mx-auto py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 lg:gap-8">
-            <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="lg:col-span-1 space-y-6">
               <LocalDocumentAnalyzer />
+            </div>
+            
+            <div className="lg:col-span-2">
+              <AnalysisResultsSection
+                analysisResult={analysisResult}
+                isAnalyzing={isAnalyzing}
+                isChatting={isChatting}
+                onUseSampleText={handleUseSampleText}
+                onSendMessage={handleSendMessage}
+              />
             </div>
           </div>
         </div>
