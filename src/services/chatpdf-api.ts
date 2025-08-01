@@ -42,7 +42,17 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       summary: data.summary,
       gaps: data.gaps || [],
       overpayments: data.overpayments || [],
-      recommendations: data.recommendations || [],
+      recommendations: Array.isArray(data.recommendations) ? data.recommendations.map((rec: any) => ({
+        priority: rec.priority || "Medium",
+        category: rec.category || "General",
+        issue: rec.issue || rec,
+        recommendation: rec.recommendation || rec,
+        impact: rec.impact || "Medium impact",
+        estimatedCost: rec.estimatedCost || "Contact agent"
+      })) : [],
+      coverage_analysis: data.coverage_analysis || [],
+      overallScore: data.overallScore || 75,
+      riskLevel: data.riskLevel || data.risk_assessment?.overall_risk_level || "Medium",
       document_id: data.document_id,
       is_insurance_policy: data.is_insurance_policy,
       risk_assessment: data.risk_assessment || {

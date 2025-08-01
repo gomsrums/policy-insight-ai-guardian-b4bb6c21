@@ -152,7 +152,7 @@ const AnalysisResultsSection = ({
                       {analysisResult.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
                           <span className="text-blue-500 mt-1">•</span>
-                          {rec}
+                          {typeof rec === 'string' ? rec : rec.recommendation}
                         </li>
                       ))}
                     </ul>

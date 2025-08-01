@@ -10,7 +10,7 @@ import { FileText, Shield, CheckCircle, AlertCircle, Download, TrendingUp, Alert
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { uploadDocumentForAnalysis } from "@/services/chatpdf-api";
-import { AnalysisResult } from "@/lib/chatpdf-types";
+import { AnalysisResult, CoverageAnalysisItem, RecommendationItem } from "@/lib/chatpdf-types";
 
 interface CoverageItem {
   type: string;
@@ -64,8 +64,8 @@ const EnhancedDocumentAnalyzer = () => {
       const policyDocument = {
         id: `doc_${Date.now()}`,
         name: selectedFile.name,
-        type: "insurance_policy" as const,
-        status: "uploaded" as const,
+        type: "file" as const,
+        status: "uploading" as const,
         file: selectedFile
       };
 
@@ -99,6 +99,35 @@ const EnhancedDocumentAnalyzer = () => {
     }
   };
 
+  // Helper functions
+  const getRiskBadge = (risk?: string) => {
+    const level = risk || "Medium";
+    const colors = {
+      High: "bg-red-100 text-red-800",
+      Medium: "bg-yellow-100 text-yellow-800", 
+      Low: "bg-green-100 text-green-800"
+    };
+    return <Badge className={colors[level as keyof typeof colors]}>{level}</Badge>;
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const colors = {
+      High: "bg-red-100 text-red-800",
+      Medium: "bg-yellow-100 text-yellow-800",
+      Low: "bg-green-100 text-green-800"
+    };
+    return <Badge className={colors[priority as keyof typeof colors]}>{priority}</Badge>;
+  };
+
+  const getSpecificRecommendation = (type: string) => {
+    const recommendations: Record<string, string> = {
+      "Cyber Liability": "Consider adding cyber liability coverage to protect against data breaches",
+      "Business Interruption": "Add business interruption coverage to protect revenue during closures",
+      "Professional Liability": "Professional liability coverage recommended for service-based businesses"
+    };
+    return recommendations[type] || "Contact your insurance agent for specific recommendations";
+  };
+
   // Convert ChatPDF analysis result to display format
   const convertToDisplayFormat = (result: AnalysisResult) => {
     const coverageItems: CoverageItem[] = result.coverage_analysis?.map(item => ({
@@ -112,7 +141,7 @@ const EnhancedDocumentAnalyzer = () => {
       summary: result.summary,
       gaps: result.gaps,
       recommendations: result.recommendations,
-      riskLevel: result.risk_assessment?.overall_risk_level || "Medium",
+      riskLevel: result.riskLevel || result.risk_assessment?.overall_risk_level || "Medium",
       coverageItems
     };
   };
@@ -184,6 +213,12 @@ Note: This analysis was performed using AI-powered ChatPDF analysis for accurate
     }
     return acc;
   }, [] as Array<{ status: string; count: number }>) || [];
+
+  const riskChartData = [
+    { risk: "High", count: analysisResult?.coverage_analysis?.filter(item => item.risk === "High").length || 0 },
+    { risk: "Medium", count: analysisResult?.coverage_analysis?.filter(item => item.risk === "Medium").length || 0 },
+    { risk: "Low", count: analysisResult?.coverage_analysis?.filter(item => item.risk === "Low").length || 0 }
+  ];
 
   return (
     <div className="space-y-6">
@@ -316,8 +351,8 @@ Note: This analysis was performed using AI-powered ChatPDF analysis for accurate
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {analysisResult.coverageItems
-                      .filter(item => item.status === "Not Covered" || item.status === "Excluded")
+                    {analysisResult.coverage_analysis
+                      ?.filter(item => item.status === "Not Covered" || item.status === "Excluded")
                       .map((item, index) => (
                         <TableRow key={index}>
                           <TableCell className="font-medium">{item.type}</TableCell>
@@ -351,7 +386,7 @@ Note: This analysis was performed using AI-powered ChatPDF analysis for accurate
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {analysisResult.recommendations.map((rec, index) => (
+                    {analysisResult.recommendations?.map((rec, index) => (
                       <TableRow key={index}>
                         <TableCell>{getPriorityBadge(rec.priority)}</TableCell>
                         <TableCell className="font-medium">{rec.category}</TableCell>
@@ -405,21 +440,21 @@ Note: This analysis was performed using AI-powered ChatPDF analysis for accurate
 
                 <Card className="p-4">
                   <h4 className="font-semibold mb-4">Overall Risk Assessment</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span>Overall Score</span>
-                      <span className="font-bold">{analysisResult.overallScore}/100</span>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span>Overall Score</span>
+                        <span className="font-bold">{analysisResult.overallScore || 75}/100</span>
+                      </div>
+                      <Progress value={analysisResult.overallScore || 75} className="w-full" />
+                      <div className="text-sm text-muted-foreground">
+                        {(analysisResult.riskLevel || analysisResult.risk_assessment?.overall_risk_level) === 'Low' 
+                          ? 'Your policy provides good coverage with minimal gaps'
+                          : (analysisResult.riskLevel || analysisResult.risk_assessment?.overall_risk_level) === 'Medium'
+                          ? 'Some coverage improvements recommended'
+                          : 'Significant coverage gaps identified - immediate action recommended'
+                        }
+                      </div>
                     </div>
-                    <Progress value={analysisResult.overallScore} className="w-full" />
-                    <div className="text-sm text-muted-foreground">
-                      {analysisResult.riskLevel === 'Low' 
-                        ? 'Your policy provides good coverage with minimal gaps'
-                        : analysisResult.riskLevel === 'Medium'
-                        ? 'Some coverage improvements recommended'
-                        : 'Significant coverage gaps identified - immediate action recommended'
-                      }
-                    </div>
-                  </div>
                 </Card>
               </TabsContent>
             </Tabs>

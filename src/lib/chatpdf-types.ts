@@ -12,12 +12,32 @@ export interface AnalysisResult {
   gaps: string[];
   overpayments: string[];
   summary: string;
-  recommendations: string[];
+  recommendations: RecommendationItem[];
+  coverage_analysis: CoverageAnalysisItem[];
+  overallScore: number;
+  riskLevel: "Low" | "Medium" | "High";
   risk_assessment?: {
     overall_risk_level: "Low" | "Medium" | "High";
     risk_factors: string[];
     mitigation_strategies: string[];
   };
+}
+
+export interface RecommendationItem {
+  priority: "High" | "Medium" | "Low";
+  category: string;
+  issue: string;
+  recommendation: string;
+  impact: string;
+  estimatedCost: string;
+}
+
+export interface CoverageAnalysisItem {
+  type: string;
+  status: "Covered" | "Partial" | "Not Covered" | "Excluded";
+  limit?: string;
+  notes: string;
+  risk?: "High" | "Medium" | "Low";
 }
 
 export interface PolicyBenchmark {

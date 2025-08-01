@@ -114,7 +114,17 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       summary: summary,
       gaps: gaps,
       overpayments: [], // Add empty array for overpayments as it's required by the interface
-      recommendations: recommendations,
+      recommendations: recommendations.map(rec => ({
+        priority: "Medium" as const,
+        category: "General",
+        issue: rec,
+        recommendation: rec,
+        impact: "Medium impact",
+        estimatedCost: "Contact agent"
+      })),
+      coverage_analysis: [],
+      overallScore: 75,
+      riskLevel: "Medium" as const,
       document_id: sourceId,
       is_insurance_policy: true,
       risk_assessment: {
