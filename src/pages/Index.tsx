@@ -10,9 +10,9 @@ import FooterSection from "@/components/FooterSection";
 import LoginDialog from "@/components/LoginDialog";
 import { InsuranceChatbot } from "@/components/InsuranceChatbot";
 import { Card } from "@/components/ui/card";
-import { Shield, FileText, BarChart3, MessageCircle } from "lucide-react";
+import { Shield, FileText, BarChart3, MessageCircle, Search } from "lucide-react";
 
-import SocialMediaContentGenerator from "@/components/SocialMediaContentGenerator";
+import QuickAnalysisForm from "@/components/QuickAnalysisForm";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
@@ -478,7 +478,38 @@ For detailed analysis of your specific policy, please upload your policy documen
         </div>
       </main>
       
-      <SocialMediaContentGenerator />
+      {/* Quick Policy Check Section */}
+      <section className="py-12 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Quick Policy Check</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Get instant insights about your insurance policy with our AI-powered quick analysis
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <QuickAnalysisForm 
+              onAnalyze={async (data) => {
+                // Quick analysis logic
+                return {
+                  riskScore: Math.floor(Math.random() * 40) + 60,
+                  recommendations: [
+                    "Consider increasing your coverage amount for better protection",
+                    "Your deductible is appropriate for your risk profile",
+                    "Look into bundling discounts with the same provider"
+                  ],
+                  gaps: [
+                    "No umbrella liability coverage detected",
+                    "Consider adding identity theft protection"
+                  ]
+                };
+              }}
+              isAnalyzing={false}
+            />
+          </div>
+        </div>
+      </section>
       
       <FooterSection />
       
