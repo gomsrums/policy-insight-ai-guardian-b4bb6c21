@@ -1,5 +1,11 @@
 
-project_id = "fchjeqgwiiacgirwjaze"
+project_id = "takieoywodunrjoteclz"
 
 [functions.policy-analyze-openai]
+verify_jwt = false
+
+[functions.chatpdf-analyze]
+verify_jwt = false
+
+[functions.chatpdf-chat]
 verify_jwt = false

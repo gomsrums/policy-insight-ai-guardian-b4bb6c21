@@ -9,41 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Shield, CheckCircle, AlertCircle, Download, TrendingUp, AlertTriangle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { uploadDocumentForAnalysis } from "@/services/chatpdf-api";
+import { AnalysisResult } from "@/lib/chatpdf-types";
 
 interface CoverageItem {
   type: string;
   status: "Covered" | "Partial" | "Not Covered" | "Excluded";
   limit?: string;
-  deductible?: string;
   notes: string;
-  risk: "Low" | "Medium" | "High";
-}
-
-interface Recommendation {
-  priority: "High" | "Medium" | "Low";
-  category: string;
-  issue: string;
-  recommendation: string;
-  impact: string;
-  estimatedCost?: string;
-}
-
-interface AnalysisResult {
-  overallScore: number;
-  riskLevel: "Low" | "Medium" | "High";
-  coverageItems: CoverageItem[];
-  recommendations: Recommendation[];
-  summary: {
-    totalCoverages: number;
-    adequateCoverages: number;
-    gapsIdentified: number;
-    criticalIssues: number;
-  };
-  premiumAnalysis: {
-    current: number;
-    marketAverage: number;
-    recommendation: string;
-  };
 }
 
 const COLORS = ['#22c55e', '#f59e0b', '#ef4444', '#6b7280'];
@@ -78,35 +51,46 @@ const EnhancedDocumentAnalyzer = () => {
     setProgress(0);
 
     try {
+      // Simulate progress steps
       const steps = [
-        "Reading document content...",
-        "Extracting policy terms...",
-        "Analyzing coverage limits...",
-        "Identifying exclusions...", 
-        "Evaluating deductibles...",
-        "Assessing premium value...",
-        "Generating recommendations..."
+        "Uploading document to ChatPDF...",
+        "Extracting policy information...",
+        "Analyzing coverage gaps...",
+        "Identifying recommendations...",
+        "Generating insights..."
       ];
 
-      for (let i = 0; i < steps.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setProgress(((i + 1) / steps.length) * 100);
-      }
+      // Upload document for real analysis
+      const policyDocument = {
+        id: `doc_${Date.now()}`,
+        name: selectedFile.name,
+        type: "insurance_policy" as const,
+        status: "uploaded" as const,
+        file: selectedFile
+      };
 
-      const text = await selectedFile.text();
-      const analysisResult = performIntelligentAnalysis(text);
-      setAnalysisResult(analysisResult);
+      // Update progress during analysis
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90));
+      }, 1000);
+
+      const result = await uploadDocumentForAnalysis(policyDocument);
+      
+      clearInterval(progressInterval);
+      setProgress(100);
+
+      setAnalysisResult(result);
 
       toast({
         title: "Analysis Complete",
-        description: "Comprehensive policy analysis with actionable insights ready.",
+        description: "Your insurance policy has been analyzed with real AI insights.",
       });
 
     } catch (error) {
       console.error("Analysis error:", error);
       toast({
         title: "Analysis Failed",
-        description: "There was an error analyzing your document. Please try again.",
+        description: error instanceof Error ? error.message : "Please try again with a valid insurance policy document.",
         variant: "destructive",
       });
     } finally {
@@ -115,169 +99,24 @@ const EnhancedDocumentAnalyzer = () => {
     }
   };
 
-  const performIntelligentAnalysis = (text: string): AnalysisResult => {
-    const lowerText = text.toLowerCase();
-    
-    // Extract key insurance elements
-    const coverageItems: CoverageItem[] = [];
-    const recommendations: Recommendation[] = [];
-    
-    // Analyze common coverage types
-    const coverageTypes = [
-      { type: "Liability Coverage", keywords: ["liability", "bodily injury", "property damage"] },
-      { type: "Comprehensive Coverage", keywords: ["comprehensive", "other than collision"] },
-      { type: "Collision Coverage", keywords: ["collision", "upset"] },
-      { type: "Personal Injury Protection", keywords: ["pip", "personal injury protection", "medical payments"] },
-      { type: "Uninsured Motorist", keywords: ["uninsured motorist", "underinsured"] },
-      { type: "Flood Coverage", keywords: ["flood", "flooding", "water damage"] },
-      { type: "Cyber Liability", keywords: ["cyber", "data breach", "privacy"] },
-      { type: "Umbrella Policy", keywords: ["umbrella", "excess liability"] },
-      { type: "Business Interruption", keywords: ["business interruption", "loss of income"] },
-      { type: "Professional Liability", keywords: ["professional liability", "errors and omissions", "e&o"] }
-    ];
-
-    coverageTypes.forEach(coverage => {
-      const found = coverage.keywords.some(keyword => lowerText.includes(keyword));
-      
-      if (found) {
-        // Extract limits and deductibles if mentioned
-        const limitMatch = text.match(new RegExp(`${coverage.keywords[0]}[^.]*?(\\$[\\d,]+)`, 'i'));
-        const deductibleMatch = text.match(/deductible[^.]*?\$[\d,]+/gi);
-        
-        let status: CoverageItem['status'] = "Covered";
-        let risk: CoverageItem['risk'] = "Low";
-        let notes = "Coverage identified in policy";
-
-        // Check for exclusions
-        if (lowerText.includes(`exclud`) && coverage.keywords.some(k => lowerText.includes(k))) {
-          status = "Excluded";
-          risk = "High";
-          notes = "Explicitly excluded from coverage";
-        } else if (limitMatch && parseInt(limitMatch[1].replace(/[$,]/g, '')) < 100000) {
-          status = "Partial";
-          risk = "Medium";
-          notes = "Coverage limit may be insufficient";
-        }
-
-        coverageItems.push({
-          type: coverage.type,
-          status,
-          limit: limitMatch ? limitMatch[1] : "Not specified",
-          deductible: deductibleMatch?.[0]?.match(/\$[\d,]+/)?.[0] || "Not specified",
-          notes,
-          risk
-        });
-      } else {
-        // Coverage not found - potential gap
-        coverageItems.push({
-          type: coverage.type,
-          status: "Not Covered",
-          limit: "N/A",
-          deductible: "N/A",
-          notes: "No coverage found for this risk",
-          risk: ["Flood Coverage", "Cyber Liability", "Umbrella Policy"].includes(coverage.type) ? "High" : "Medium"
-        });
-
-        // Generate specific recommendations based on missing coverage
-        let priority: Recommendation['priority'] = "Medium";
-        let impact = "Moderate financial exposure";
-        
-        if (["Liability Coverage", "Flood Coverage", "Cyber Liability"].includes(coverage.type)) {
-          priority = "High";
-          impact = "Significant financial and legal exposure";
-        }
-
-        recommendations.push({
-          priority,
-          category: "Coverage Gap",
-          issue: `${coverage.type} not found in policy`,
-          recommendation: getSpecificRecommendation(coverage.type),
-          impact,
-          estimatedCost: getEstimatedCost(coverage.type)
-        });
-      }
-    });
-
-    // Analyze deductibles
-    const deductibles = text.match(/deductible[^.]*?\$[\d,]+/gi);
-    if (deductibles) {
-      deductibles.forEach(ded => {
-        const amount = parseInt(ded.match(/\$[\d,]+/)?.[0]?.replace(/[$,]/g, '') || '0');
-        if (amount > 2500) {
-          recommendations.push({
-            priority: "Medium",
-            category: "Financial Optimization", 
-            issue: `High deductible identified: ${ded.match(/\$[\d,]+/)?.[0]}`,
-            recommendation: "Consider lowering deductible to reduce out-of-pocket costs during claims",
-            impact: "Lower immediate costs during claim events",
-            estimatedCost: "5-15% premium increase"
-          });
-        }
-      });
-    }
-
-    // Analyze premium value
-    const premiumMatch = text.match(/premium[^.]*?\$[\d,]+/gi);
-    let currentPremium = 0;
-    if (premiumMatch) {
-      currentPremium = parseInt(premiumMatch[0].match(/\$[\d,]+/)?.[0]?.replace(/[$,]/g, '') || '0');
-    }
-
-    const adequateCoverages = coverageItems.filter(item => item.status === "Covered").length;
-    const gapsIdentified = coverageItems.filter(item => item.status === "Not Covered").length;
-    const criticalIssues = coverageItems.filter(item => item.risk === "High").length;
-
-    const overallScore = Math.max(20, Math.min(100, 
-      (adequateCoverages / coverageItems.length) * 80 + 
-      (criticalIssues === 0 ? 20 : Math.max(0, 20 - criticalIssues * 5))
-    ));
-
-    const riskLevel = overallScore >= 75 ? "Low" : overallScore >= 50 ? "Medium" : "High";
+  // Convert ChatPDF analysis result to display format
+  const convertToDisplayFormat = (result: AnalysisResult) => {
+    const coverageItems: CoverageItem[] = result.coverage_analysis?.map(item => ({
+      type: item.type,
+      status: item.status as "Covered" | "Partial" | "Not Covered" | "Excluded",
+      limit: item.limit || "Not specified",
+      notes: item.notes
+    })) || [];
 
     return {
-      overallScore: Math.round(overallScore),
-      riskLevel,
-      coverageItems,
-      recommendations,
-      summary: {
-        totalCoverages: coverageItems.length,
-        adequateCoverages,
-        gapsIdentified,
-        criticalIssues
-      },
-      premiumAnalysis: {
-        current: currentPremium,
-        marketAverage: Math.round(currentPremium * (1 + (Math.random() - 0.5) * 0.3)),
-        recommendation: currentPremium > 0 ? 
-          (Math.random() > 0.5 ? "Consider shopping for competitive rates" : "Premium appears competitive") :
-          "Premium information not found in document"
-      }
+      summary: result.summary,
+      gaps: result.gaps,
+      recommendations: result.recommendations,
+      riskLevel: result.risk_assessment?.overall_risk_level || "Medium",
+      coverageItems
     };
   };
 
-  const getSpecificRecommendation = (coverageType: string): string => {
-    const recommendations: Record<string, string> = {
-      "Liability Coverage": "Add comprehensive liability coverage with minimum $500k limits to protect against lawsuits",
-      "Flood Coverage": "Purchase separate flood insurance through NFIP or private insurers, especially in flood-prone areas", 
-      "Cyber Liability": "Add cyber liability coverage to protect against data breaches and ransomware attacks",
-      "Umbrella Policy": "Consider umbrella policy for additional liability protection beyond primary coverage limits",
-      "Business Interruption": "Add business interruption coverage to protect income during covered losses",
-      "Professional Liability": "Essential for service-based businesses to cover professional mistakes and omissions"
-    };
-    return recommendations[coverageType] || `Consider adding ${coverageType} to enhance your protection`;
-  };
-
-  const getEstimatedCost = (coverageType: string): string => {
-    const costs: Record<string, string> = {
-      "Liability Coverage": "$300-800/year",
-      "Flood Coverage": "$400-1,200/year",
-      "Cyber Liability": "$500-2,000/year", 
-      "Umbrella Policy": "$200-500/year",
-      "Business Interruption": "$300-1,500/year",
-      "Professional Liability": "$500-3,000/year"
-    };
-    return costs[coverageType] || "$200-1,000/year";
-  };
 
   const getStatusIcon = (status: CoverageItem['status']) => {
     switch (status) {
@@ -288,67 +127,39 @@ const EnhancedDocumentAnalyzer = () => {
     }
   };
 
-  const getRiskBadge = (risk: CoverageItem['risk']) => {
-    const colors = {
-      "Low": "bg-green-100 text-green-800",
-      "Medium": "bg-yellow-100 text-yellow-800", 
-      "High": "bg-red-100 text-red-800"
-    };
-    return <Badge className={colors[risk]}>{risk} Risk</Badge>;
-  };
-
-  const getPriorityBadge = (priority: Recommendation['priority']) => {
-    const colors = {
-      "Low": "bg-blue-100 text-blue-800",
-      "Medium": "bg-yellow-100 text-yellow-800",
-      "High": "bg-red-100 text-red-800"
-    };
-    return <Badge className={colors[priority]}>{priority}</Badge>;
-  };
-
   const downloadReport = () => {
     if (!analysisResult || !selectedFile) return;
 
+    const displayData = convertToDisplayFormat(analysisResult);
+    
     const report = `
 COMPREHENSIVE INSURANCE POLICY ANALYSIS REPORT
 =============================================
 Document: ${selectedFile.name}
 Analysis Date: ${new Date().toLocaleDateString()}
-Overall Score: ${analysisResult.overallScore}/100
-Risk Level: ${analysisResult.riskLevel}
+Risk Level: ${displayData.riskLevel}
 
 EXECUTIVE SUMMARY
 ================
-Total Coverage Types Analyzed: ${analysisResult.summary.totalCoverages}
-Adequate Coverages: ${analysisResult.summary.adequateCoverages}
-Coverage Gaps Identified: ${analysisResult.summary.gapsIdentified}
-Critical Issues: ${analysisResult.summary.criticalIssues}
+${displayData.summary}
+
+COVERAGE GAPS IDENTIFIED
+========================
+${displayData.gaps.map((gap, i) => `${i + 1}. ${gap}`).join('\n')}
 
 COVERAGE ANALYSIS
 ================
-${analysisResult.coverageItems.map(item => 
-`${item.type}: ${item.status} (${item.risk} Risk)
+${displayData.coverageItems.map(item => 
+`${item.type}: ${item.status}
   Limit: ${item.limit}
-  Deductible: ${item.deductible}
   Notes: ${item.notes}`
 ).join('\n\n')}
 
 RECOMMENDATIONS
 ==============
-${analysisResult.recommendations.map((rec, i) => 
-`${i + 1}. [${rec.priority} Priority] ${rec.issue}
-   Recommendation: ${rec.recommendation}
-   Impact: ${rec.impact}
-   Estimated Cost: ${rec.estimatedCost || 'Contact insurer'}`
-).join('\n\n')}
+${displayData.recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}
 
-PREMIUM ANALYSIS
-===============
-Current Premium: $${analysisResult.premiumAnalysis.current.toLocaleString()}
-Market Average: $${analysisResult.premiumAnalysis.marketAverage.toLocaleString()}
-Recommendation: ${analysisResult.premiumAnalysis.recommendation}
-
-Note: This analysis was performed locally for complete privacy and data security.
+Note: This analysis was performed using AI-powered ChatPDF analysis for accurate insights.
 `;
 
     const blob = new Blob([report], { type: 'text/plain' });
@@ -362,7 +173,9 @@ Note: This analysis was performed locally for complete privacy and data security
     URL.revokeObjectURL(url);
   };
 
-  const coverageChartData = analysisResult?.coverageItems.reduce((acc, item) => {
+  const displayData = analysisResult ? convertToDisplayFormat(analysisResult) : null;
+  
+  const coverageChartData = displayData?.coverageItems.reduce((acc, item) => {
     const existing = acc.find(d => d.status === item.status);
     if (existing) {
       existing.count++;
@@ -371,16 +184,6 @@ Note: This analysis was performed locally for complete privacy and data security
     }
     return acc;
   }, [] as Array<{ status: string; count: number }>) || [];
-
-  const riskChartData = analysisResult?.coverageItems.reduce((acc, item) => {
-    const existing = acc.find(d => d.risk === item.risk);
-    if (existing) {
-      existing.count++;
-    } else {
-      acc.push({ risk: item.risk, count: 1 });
-    }
-    return acc;
-  }, [] as Array<{ risk: string; count: number }>) || [];
 
   return (
     <div className="space-y-6">
@@ -442,7 +245,7 @@ Note: This analysis was performed locally for complete privacy and data security
         </CardContent>
       </Card>
 
-      {analysisResult && (
+      {analysisResult && displayData && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -455,89 +258,50 @@ Note: This analysis was performed locally for complete privacy and data security
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="summary" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="summary">Summary</TabsTrigger>
                 <TabsTrigger value="coverage">Coverage Analysis</TabsTrigger>
                 <TabsTrigger value="gaps">Coverage Gaps</TabsTrigger>
                 <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-                <TabsTrigger value="charts">Visual Analysis</TabsTrigger>
               </TabsList>
 
               <TabsContent value="summary" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Card className="p-4 text-center">
-                    <div className="text-2xl font-bold">{analysisResult.overallScore}/100</div>
-                    <div className={`text-sm ${
-                      analysisResult.riskLevel === 'Low' ? 'text-green-600' :
-                      analysisResult.riskLevel === 'Medium' ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                      {analysisResult.riskLevel} Risk
+                <div className="space-y-4">
+                  <Card className="p-4">
+                    <h4 className="font-semibold mb-2">Analysis Summary</h4>
+                    <div className="text-sm">
+                      <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
+                        displayData.riskLevel === 'Low' ? 'bg-green-100 text-green-800' :
+                        displayData.riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        Risk Level: {displayData.riskLevel}
+                      </div>
                     </div>
-                  </Card>
-                  <Card className="p-4 text-center">
-                    <div className="text-2xl font-bold text-green-600">{analysisResult.summary.adequateCoverages}</div>
-                    <div className="text-sm text-muted-foreground">Adequate Coverages</div>
-                  </Card>
-                  <Card className="p-4 text-center">
-                    <div className="text-2xl font-bold text-red-600">{analysisResult.summary.gapsIdentified}</div>
-                    <div className="text-sm text-muted-foreground">Coverage Gaps</div>
-                  </Card>
-                  <Card className="p-4 text-center">
-                    <div className="text-2xl font-bold text-orange-600">{analysisResult.summary.criticalIssues}</div>
-                    <div className="text-sm text-muted-foreground">Critical Issues</div>
+                    <p className="mt-3 text-sm text-muted-foreground">{displayData.summary}</p>
                   </Card>
                 </div>
-
-                <Card className="p-4">
-                  <h4 className="font-semibold mb-2">Premium Analysis</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Current Premium:</span>
-                      <div className="font-bold">${analysisResult.premiumAnalysis.current.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Market Average:</span>
-                      <div className="font-bold">${analysisResult.premiumAnalysis.marketAverage.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Recommendation:</span>
-                      <div className="font-medium">{analysisResult.premiumAnalysis.recommendation}</div>
-                    </div>
-                  </div>
-                </Card>
               </TabsContent>
 
               <TabsContent value="coverage">
-                <Table>
-                  <TableCaption>Detailed coverage analysis for your policy</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Coverage Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Limit</TableHead>
-                      <TableHead>Deductible</TableHead>
-                      <TableHead>Risk Level</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {analysisResult.coverageItems.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.type}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(item.status)}
-                            {item.status}
+                <div className="space-y-4">
+                  {displayData.coverageItems.map((item, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {getStatusIcon(item.status)}
+                          <div>
+                            <h4 className="font-medium">{item.type}</h4>
+                            <p className="text-sm text-muted-foreground">{item.notes}</p>
                           </div>
-                        </TableCell>
-                        <TableCell>{item.limit}</TableCell>
-                        <TableCell>{item.deductible}</TableCell>
-                        <TableCell>{getRiskBadge(item.risk)}</TableCell>
-                        <TableCell className="max-w-xs truncate">{item.notes}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium">{item.status}</div>
+                          <div className="text-xs text-muted-foreground">Limit: {item.limit}</div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               </TabsContent>
 
               <TabsContent value="gaps">
