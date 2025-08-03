@@ -7,7 +7,7 @@ interface Profile {
   id: string;
   email: string;
   name: string;
-  is_admin?: boolean;
+  is_admin: boolean;
 }
 
 interface AuthContextType {
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = profile?.email === 'gomsrums@gmail.com';
+  const isAdmin = profile?.is_admin === true;
 
   useEffect(() => {
     // Set up auth state listener
@@ -65,10 +65,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               if (error) {
                 console.log('Profile fetch error:', error);
               } else if (profileData) {
-                setProfile({
-                  ...profileData,
-                  is_admin: profileData.email === 'gomsrums@gmail.com'
-                });
+                setProfile(profileData);
               }
             } catch (error) {
               console.error('Error fetching profile:', error);

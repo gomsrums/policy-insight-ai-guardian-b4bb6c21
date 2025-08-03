@@ -14,8 +14,36 @@ serve(async (req) => {
   }
 
   try {
+    // Validate request size (max 10MB)
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      return new Response(JSON.stringify({ error: 'Request too large' }), {
+        status: 413,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
     const { document_content, document_name, analysis_type = "comprehensive" } = body;
+
+    // Input validation
+    if (!document_content || typeof document_content !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid document content' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!document_name || typeof document_name !== 'string' || document_name.length > 255) {
+      return new Response(JSON.stringify({ error: 'Invalid document name' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Sanitize inputs
+    const sanitizedContent = document_content.trim().substring(0, 100000); // Limit content size
+    const sanitizedName = document_name.replace(/[^\w\s.-]/gi, '').trim().substring(0, 255);
 
     if (!document_content) {
       return new Response(JSON.stringify({ error: "Missing document_content" }), {
@@ -33,18 +61,24 @@ serve(async (req) => {
 
     console.log("Starting ChatPDF analysis for:", document_name);
 
-    // Step 1: Upload document to ChatPDF
+    // Step 1: Upload document to ChatPDF with timeout
     const formData = new FormData();
-    const textFile = new Blob([document_content], { type: "text/plain" });
-    formData.append("file", textFile, document_name || "policy-document.txt");
+    const textFile = new Blob([sanitizedContent], { type: "text/plain" });
+    formData.append("file", textFile, sanitizedName || "policy-document.txt");
 
+    const uploadController = new AbortController();
+    const uploadTimeout = setTimeout(() => uploadController.abort(), 30000); // 30s timeout
+    
     const uploadResponse = await fetch("https://api.chatpdf.com/v1/sources/add-file", {
       method: "POST",
       headers: {
         "x-api-key": chatpdfApiKey,
       },
       body: formData,
+      signal: uploadController.signal
     });
+    
+    clearTimeout(uploadTimeout);
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
@@ -95,6 +129,10 @@ serve(async (req) => {
     Return ONLY the JSON object, no additional text.
     `;
 
+    // Send analysis prompt with timeout
+    const analysisController = new AbortController();
+    const analysisTimeout = setTimeout(() => analysisController.abort(), 60000); // 60s timeout
+    
     const analysisResponse = await fetch("https://api.chatpdf.com/v1/chats/message", {
       method: "POST",
       headers: {
@@ -110,7 +148,10 @@ serve(async (req) => {
           },
         ],
       }),
+      signal: analysisController.signal
     });
+    
+    clearTimeout(analysisTimeout);
 
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text();
