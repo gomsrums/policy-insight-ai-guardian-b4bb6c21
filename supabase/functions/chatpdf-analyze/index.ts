@@ -26,7 +26,7 @@ serve(async (req) => {
     const body = await req.json();
     const { document_content, document_name, analysis_type = "comprehensive" } = body;
 
-    // Input validation
+    // Input validation - make document_name optional
     if (!document_content || typeof document_content !== 'string') {
       return new Response(JSON.stringify({ error: 'Invalid document content' }), {
         status: 400,
@@ -34,23 +34,18 @@ serve(async (req) => {
       });
     }
 
-    if (!document_name || typeof document_name !== 'string' || document_name.length > 255) {
-      return new Response(JSON.stringify({ error: 'Invalid document name' }), {
+    // Document name is optional, provide default if missing
+    const docName = document_name && typeof document_name === 'string' ? document_name : 'uploaded-document.pdf';
+    if (docName.length > 255) {
+      return new Response(JSON.stringify({ error: 'Document name too long' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Sanitize inputs
-    const sanitizedContent = document_content.trim().substring(0, 100000); // Limit content size
-    const sanitizedName = document_name.replace(/[^\w\s.-]/gi, '').trim().substring(0, 255);
-
-    if (!document_content) {
-      return new Response(JSON.stringify({ error: "Missing document_content" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Sanitize inputs - be more lenient with content size for PDFs
+    const sanitizedContent = document_content.trim().substring(0, 500000); // Increased to 500KB for PDFs
+    const sanitizedName = docName.replace(/[^\w\s.-]/gi, '').trim().substring(0, 255) || 'document.pdf';
 
     if (!chatpdfApiKey) {
       return new Response(JSON.stringify({ error: "ChatPDF API key not configured" }), {
@@ -59,15 +54,15 @@ serve(async (req) => {
       });
     }
 
-    console.log("Starting ChatPDF analysis for:", document_name);
+    console.log("Starting ChatPDF analysis for:", sanitizedName);
 
     // Step 1: Upload document to ChatPDF with timeout
     const formData = new FormData();
-    const textFile = new Blob([sanitizedContent], { type: "text/plain" });
-    formData.append("file", textFile, sanitizedName || "policy-document.txt");
+    const textFile = new Blob([sanitizedContent], { type: "application/pdf" });
+    formData.append("file", textFile, sanitizedName);
 
     const uploadController = new AbortController();
-    const uploadTimeout = setTimeout(() => uploadController.abort(), 30000); // 30s timeout
+    const uploadTimeout = setTimeout(() => uploadController.abort(), 45000); // Increased to 45s for large PDFs
     
     const uploadResponse = await fetch("https://api.chatpdf.com/v1/sources/add-file", {
       method: "POST",
@@ -209,11 +204,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error in chatpdf-analyze:", error);
+    
+    // Provide more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const isTimeout = errorMessage.includes('abort') || errorMessage.includes('timeout');
+    
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: isTimeout ? 'Request timed out - document may be too large' : `Analysis failed: ${errorMessage}`
     }), {
-      status: 500,
+      status: isTimeout ? 408 : 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
