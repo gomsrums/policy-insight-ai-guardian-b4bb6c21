@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { uploadDocumentForAnalysis } from "@/services/insurance-api";
+import { uploadDocumentForAnalysis } from "@/services/chatpdf-api";
 import { PolicyDocument } from "@/lib/chatpdf-types";
 
 interface ComplianceAnalysisResult {
