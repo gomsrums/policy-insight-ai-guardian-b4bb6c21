@@ -58,8 +58,23 @@ serve(async (req) => {
 
     // Step 1: Upload document to ChatPDF with timeout
     const formData = new FormData();
-    const textFile = new Blob([sanitizedContent], { type: "application/pdf" });
-    formData.append("file", textFile, sanitizedName);
+    
+    // Handle PDF content properly - convert to base64 if it's binary data
+    let fileBlob;
+    if (sanitizedContent.startsWith('%PDF')) {
+      // This is raw PDF content, convert to proper binary
+      const binaryString = sanitizedContent;
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      fileBlob = new Blob([bytes], { type: "application/pdf" });
+    } else {
+      // This is text content, create as text file for analysis
+      fileBlob = new Blob([sanitizedContent], { type: "text/plain" });
+    }
+    
+    formData.append("file", fileBlob, sanitizedName);
 
     const uploadController = new AbortController();
     const uploadTimeout = setTimeout(() => uploadController.abort(), 45000); // Increased to 45s for large PDFs
@@ -75,13 +90,32 @@ serve(async (req) => {
     
     clearTimeout(uploadTimeout);
 
-    if (!uploadResponse.ok) {
+    let uploadData;
+    try {
+      uploadData = await uploadResponse.json();
+    } catch (error) {
       const errorText = await uploadResponse.text();
-      console.error("ChatPDF upload failed:", errorText);
-      throw new Error(`ChatPDF upload failed: ${errorText}`);
+      console.error("ChatPDF upload failed - invalid JSON response:", errorText);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: `ChatPDF upload failed: ${errorText.substring(0, 200)}` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const uploadData = await uploadResponse.json();
+    if (!uploadResponse.ok || !uploadData.sourceId) {
+      console.error("ChatPDF upload failed:", uploadData);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: `ChatPDF upload failed: ${JSON.stringify(uploadData)}` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const sourceId = uploadData.sourceId;
 
     console.log("Document uploaded to ChatPDF with sourceId:", sourceId);
@@ -149,13 +183,45 @@ serve(async (req) => {
     clearTimeout(analysisTimeout);
 
     if (!analysisResponse.ok) {
-      const errorText = await analysisResponse.text();
-      console.error("ChatPDF analysis failed:", errorText);
-      throw new Error(`ChatPDF analysis failed: ${errorText}`);
+      let errorData;
+      try {
+        errorData = await analysisResponse.json();
+        console.error("ChatPDF analysis failed:", errorData);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: `ChatPDF analysis failed: ${JSON.stringify(errorData)}` 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (error) {
+        const errorText = await analysisResponse.text();
+        console.error("ChatPDF analysis failed - non-JSON response:", errorText);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: `ChatPDF analysis failed: ${errorText.substring(0, 200)}` 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    const analysisData = await analysisResponse.json();
-    console.log("ChatPDF analysis response:", analysisData);
+    let analysisData;
+    try {
+      analysisData = await analysisResponse.json();
+      console.log("ChatPDF analysis response:", analysisData);
+    } catch (error) {
+      const responseText = await analysisResponse.text();
+      console.error("ChatPDF returned non-JSON response:", responseText);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: `ChatPDF returned invalid response: ${responseText.substring(0, 200)}` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let analysisResult;
     try {
