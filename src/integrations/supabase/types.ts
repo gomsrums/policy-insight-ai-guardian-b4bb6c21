@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -255,6 +255,57 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_verifications: {
+        Row: {
+          created_at: string
+          date_of_birth: string
+          document_image_url: string | null
+          document_number: string
+          document_type: string
+          full_name: string
+          id: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          selfie_image_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth: string
+          document_image_url?: string | null
+          document_number: string
+          document_type: string
+          full_name: string
+          id?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          selfie_image_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string
+          document_image_url?: string | null
+          document_number?: string
+          document_type?: string
+          full_name?: string
+          id?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          selfie_image_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       processed_documents: {
         Row: {
           content_type: string | null
@@ -345,6 +396,158 @@ export type Database = {
         }
         Relationships: []
       }
+      revenue_transactions: {
+        Row: {
+          created_at: string
+          fee_amount_usd: number
+          fee_percentage: number | null
+          fee_type: string
+          id: string
+          original_amount_usd: number | null
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fee_amount_usd: number
+          fee_percentage?: number | null
+          fee_type: string
+          id?: string
+          original_amount_usd?: number | null
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fee_amount_usd?: number
+          fee_percentage?: number | null
+          fee_type?: string
+          id?: string
+          original_amount_usd?: number | null
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_transactions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_tiers: {
+        Row: {
+          created_at: string
+          cross_chain_fee_percent: number
+          daily_limit_usd: number
+          features: Json | null
+          id: string
+          monthly_limit_usd: number
+          name: string
+          price_monthly: number
+          price_yearly: number
+          transaction_fee_percent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cross_chain_fee_percent?: number
+          daily_limit_usd?: number
+          features?: Json | null
+          id?: string
+          monthly_limit_usd?: number
+          name: string
+          price_monthly: number
+          price_yearly: number
+          transaction_fee_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cross_chain_fee_percent?: number
+          daily_limit_usd?: number
+          features?: Json | null
+          id?: string
+          monthly_limit_usd?: number
+          name?: string
+          price_monthly?: number
+          price_yearly?: number
+          transaction_fee_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: string
+          created_at: string
+          currency: string
+          from_address: string
+          id: string
+          network: string
+          status: string
+          to_address: string
+          tx_hash: string
+          usd_amount: number | null
+          user_id: string
+        }
+        Insert: {
+          amount: string
+          created_at?: string
+          currency: string
+          from_address: string
+          id?: string
+          network?: string
+          status?: string
+          to_address: string
+          tx_hash: string
+          usd_amount?: number | null
+          user_id: string
+        }
+        Update: {
+          amount?: string
+          created_at?: string
+          currency?: string
+          from_address?: string
+          id?: string
+          network?: string
+          status?: string
+          to_address?: string
+          tx_hash?: string
+          usd_amount?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_limits: {
+        Row: {
+          created_at: string | null
+          daily_limit_usd: number | null
+          id: string
+          monthly_limit_usd: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_limit_usd?: number | null
+          id?: string
+          monthly_limit_usd?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_limit_usd?: number | null
+          id?: string
+          monthly_limit_usd?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_sessions: {
         Row: {
           browser: string | null
@@ -381,14 +584,78 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          started_at: string
+          status: string
+          tier_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          tier_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          tier_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      daily_spending: {
+        Row: {
+          daily_total_usd: number | null
+          spending_date: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      get_user_tier: {
+        Args: { user_uuid: string }
+        Returns: {
+          created_at: string
+          cross_chain_fee_percent: number
+          daily_limit_usd: number
+          features: Json | null
+          id: string
+          monthly_limit_usd: number
+          name: string
+          price_monthly: number
+          price_yearly: number
+          transaction_fee_percent: number
+          updated_at: string
+        }
       }
       halfvec_avg: {
         Args: { "": number[] }
@@ -440,7 +707,7 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: string
+        Returns: unknown
       }
       sparsevec_out: {
         Args: { "": unknown }
