@@ -48,11 +48,17 @@ serve(async (req) => {
     const sanitizedName = docName.replace(/[^\w\s.-]/gi, '').trim().substring(0, 255) || 'document.pdf';
 
     if (!chatpdfApiKey) {
-      return new Response(JSON.stringify({ error: "ChatPDF API key not configured" }), {
+      console.error("CHATPDF_API_KEY not found in environment");
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: "ChatPDF API key not configured" 
+      }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log("CHATPDF_API_KEY is configured:", chatpdfApiKey ? 'Yes' : 'No');
 
     console.log("Starting ChatPDF analysis for:", sanitizedName);
 
