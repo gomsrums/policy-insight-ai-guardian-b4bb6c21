@@ -32,8 +32,11 @@ export const uploadDocumentForAnalysis = async (document: PolicyDocument): Promi
       throw new Error(`Analysis failed: ${error.message}`);
     }
 
-    if (!data.success) {
-      throw new Error(data.error || "Analysis failed");
+    console.log("Raw edge function response:", data);
+
+    if (!data || !data.success) {
+      console.error("ChatPDF analysis failed with response:", data);
+      throw new Error(data?.error || "Analysis failed - no success response");
     }
 
     console.log("ChatPDF analysis completed:", data);
