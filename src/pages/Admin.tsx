@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, FileText, BarChart3, Settings, Shield } from "lucide-react";
+import SocialMediaContentGenerator from "@/components/SocialMediaContentGenerator";
 
 const Admin = () => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -144,6 +145,9 @@ const Admin = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Social Media Content Generator */}
+        <SocialMediaContentGenerator />
 
         {/* User Management */}
         <Card>
