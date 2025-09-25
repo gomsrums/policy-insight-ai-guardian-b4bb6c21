@@ -4,12 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTrialAccess } from "@/hooks/useTrialAccess";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
-import LocalDocumentAnalyzer from "@/components/LocalDocumentAnalyzer";
+import DocumentUploadSection from "@/components/DocumentUploadSection";
 import AnalysisResultsSection from "@/components/AnalysisResultsSection";
 import FooterSection from "@/components/FooterSection";
 import LoginDialog from "@/components/LoginDialog";
 import { InsuranceChatbot } from "@/components/InsuranceChatbot";
-import SocialMediaContentGenerator from "@/components/SocialMediaContentGenerator";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
@@ -471,7 +470,7 @@ For detailed analysis of your specific policy, please upload your policy documen
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <div className="lg:col-span-1 space-y-6">
-              <LocalDocumentAnalyzer />
+              <DocumentUploadSection onFileAdded={handleFileAdded} />
             </div>
             
             <div className="lg:col-span-2">
@@ -486,8 +485,6 @@ For detailed analysis of your specific policy, please upload your policy documen
           </div>
         </div>
       </main>
-      
-      <SocialMediaContentGenerator />
       
       <FooterSection />
       
