@@ -16,7 +16,7 @@ const About = () => {
           
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Our Mission</CardTitle>
+              <CardTitle>Our Mission is </CardTitle>
               <CardDescription>Bringing transparency to insurance</CardDescription>
             </CardHeader>
             <CardContent>
