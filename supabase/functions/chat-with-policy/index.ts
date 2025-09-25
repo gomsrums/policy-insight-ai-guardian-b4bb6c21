@@ -64,7 +64,8 @@ Please provide a helpful, accurate answer based on the policy document and your 
     });
   } catch (error) {
     console.error('Error in chat-with-policy:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -61,12 +61,13 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error processing social media request:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     
     return new Response(
       JSON.stringify({
         success: false,
         error: 'Failed to process social media content request',
-        details: error.message
+        details: errorMessage
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -103,9 +103,9 @@ serve(async (req) => {
     // Split into actionable recommendations
     const recommendationList = recommendations
       .split('\n')
-      .filter(line => line.trim().length > 0)
-      .map(line => line.replace(/^\d+\.\s*/, '').replace(/^[\-\*]\s*/, '').trim())
-      .filter(line => line.length > 10); // Filter out very short lines
+      .filter((line: string) => line.trim().length > 0)
+      .map((line: string) => line.replace(/^\d+\.\s*/, '').replace(/^[\-\*]\s*/, '').trim())
+      .filter((line: string) => line.length > 10); // Filter out very short lines
 
     return new Response(JSON.stringify({ 
       recommendations: recommendationList,
@@ -116,9 +116,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error generating recommendations:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ 
       error: 'Failed to generate recommendations',
-      details: error.message 
+      details: errorMessage 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
