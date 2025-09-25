@@ -67,17 +67,49 @@ serve(async (req) => {
     
     // Handle PDF content properly - convert to base64 if it's binary data
     let fileBlob;
-    if (sanitizedContent.startsWith('%PDF')) {
-      // This is raw PDF content, convert to proper binary
-      const binaryString = sanitizedContent;
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+    try {
+      if (sanitizedContent.startsWith('%PDF')) {
+        // This is raw PDF content - need to handle binary data properly
+        console.log("Processing raw PDF content, length:", sanitizedContent.length);
+        
+        // For PDF content sent as string, we need to convert it properly
+        // First try to decode if it's base64 encoded
+        let binaryData;
+        try {
+          // Check if it might be base64
+          if (sanitizedContent.match(/^[A-Za-z0-9+/]+=*$/)) {
+            binaryData = Uint8Array.from(atob(sanitizedContent), c => c.charCodeAt(0));
+          } else {
+            // Treat as raw binary string
+            binaryData = new Uint8Array(sanitizedContent.length);
+            for (let i = 0; i < sanitizedContent.length; i++) {
+              binaryData[i] = sanitizedContent.charCodeAt(i) & 0xFF;
+            }
+          }
+        } catch (e) {
+          // If base64 decode fails, treat as raw binary
+          binaryData = new Uint8Array(sanitizedContent.length);
+          for (let i = 0; i < sanitizedContent.length; i++) {
+            binaryData[i] = sanitizedContent.charCodeAt(i) & 0xFF;
+          }
+        }
+        
+        fileBlob = new Blob([binaryData], { type: "application/pdf" });
+        console.log("Created PDF blob with size:", fileBlob.size);
+      } else {
+        // This is text content, create as text file for analysis
+        console.log("Processing text content, length:", sanitizedContent.length);
+        fileBlob = new Blob([sanitizedContent], { type: "text/plain" });
       }
-      fileBlob = new Blob([bytes], { type: "application/pdf" });
-    } else {
-      // This is text content, create as text file for analysis
-      fileBlob = new Blob([sanitizedContent], { type: "text/plain" });
+    } catch (blobError) {
+      console.error("Error creating file blob:", blobError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: "Failed to process document content" 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     
     formData.append("file", fileBlob, sanitizedName);
@@ -168,30 +200,64 @@ serve(async (req) => {
     const analysisController = new AbortController();
     const analysisTimeout = setTimeout(() => analysisController.abort(), 60000); // 60s timeout
     
-    const analysisResponse = await fetch("https://api.chatpdf.com/v1/chats/message", {
-      method: "POST",
-      headers: {
-        "x-api-key": chatpdfApiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        sourceId: sourceId,
-        messages: [
-          {
-            role: "user",
-            content: analysisPrompt,
-          },
-        ],
-      }),
-      signal: analysisController.signal
-    });
+    let analysisResponse;
+    try {
+      analysisResponse = await fetch("https://api.chatpdf.com/v1/chats/message", {
+        method: "POST",
+        headers: {
+          "x-api-key": chatpdfApiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sourceId: sourceId,
+          messages: [
+            {
+              role: "user",
+              content: analysisPrompt,
+            },
+          ],
+        }),
+        signal: analysisController.signal
+      });
+    } catch (fetchError) {
+      clearTimeout(analysisTimeout);
+      console.error("Failed to send analysis request:", fetchError);
+      const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: `Failed to send analysis request: ${errorMessage}` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     
     clearTimeout(analysisTimeout);
 
+    // Get response text first to handle non-JSON responses
+    const responseText = await analysisResponse.text();
+    console.log("Raw ChatPDF response status:", analysisResponse.status);
+    console.log("Raw ChatPDF response text (first 500 chars):", responseText.substring(0, 500));
+
     if (!analysisResponse.ok) {
+      console.error("ChatPDF analysis failed with status:", analysisResponse.status);
+      
+      // Check if it's an HTML error page (common with internal server errors)
+      if (responseText.toLowerCase().includes('<!doctype html') || responseText.toLowerCase().includes('<html')) {
+        console.error("ChatPDF returned HTML error page instead of JSON");
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: "ChatPDF service is experiencing issues. Please try again later." 
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      // Try to parse as JSON error
       let errorData;
       try {
-        errorData = await analysisResponse.json();
+        errorData = JSON.parse(responseText);
         console.error("ChatPDF analysis failed:", errorData);
         return new Response(JSON.stringify({ 
           success: false,
@@ -200,12 +266,11 @@ serve(async (req) => {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-      } catch (error) {
-        const errorText = await analysisResponse.text();
-        console.error("ChatPDF analysis failed - non-JSON response:", errorText);
+      } catch (parseError) {
+        console.error("ChatPDF analysis failed - non-JSON error response:", responseText);
         return new Response(JSON.stringify({ 
           success: false,
-          error: `ChatPDF analysis failed: ${errorText.substring(0, 200)}` 
+          error: `ChatPDF analysis failed: ${responseText.substring(0, 200)}` 
         }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -215,11 +280,22 @@ serve(async (req) => {
 
     let analysisData;
     try {
-      analysisData = await analysisResponse.json();
+      analysisData = JSON.parse(responseText);
       console.log("ChatPDF analysis response:", analysisData);
     } catch (error) {
-      const responseText = await analysisResponse.text();
-      console.error("ChatPDF returned non-JSON response:", responseText);
+      console.error("ChatPDF returned non-JSON response:", responseText.substring(0, 500));
+      
+      // Check if it's an HTML response (internal server error)
+      if (responseText.toLowerCase().includes('<!doctype html') || responseText.toLowerCase().includes('<html')) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: "ChatPDF service is experiencing internal issues. Please try uploading the document again." 
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
       return new Response(JSON.stringify({ 
         success: false,
         error: `ChatPDF returned invalid response: ${responseText.substring(0, 200)}` 
