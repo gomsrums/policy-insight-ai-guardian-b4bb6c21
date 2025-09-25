@@ -10,6 +10,8 @@ import FooterSection from "@/components/FooterSection";
 import LoginDialog from "@/components/LoginDialog";
 import { InsuranceChatbot } from "@/components/InsuranceChatbot";
 import SocialMediaContentGenerator from "@/components/SocialMediaContentGenerator";
+import { Card } from "@/components/ui/card";
+import { FileText, BarChart3, Shield, MessageCircle } from "lucide-react";
 import { PolicyDocument, AnalysisResult } from "@/lib/chatpdf-types";
 import { uploadDocumentForAnalysis, sendChatMessage } from "@/services/chatpdf-api";
 import { saveAnalysisResultHistory, getAnalysisResultsHistory } from "@/services/history";
