@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTrialAccess } from "@/hooks/useTrialAccess";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
-import EnhancedDocumentAnalyzer from "@/components/EnhancedDocumentAnalyzer";
+import LocalDocumentAnalyzer from "@/components/LocalDocumentAnalyzer";
 import AnalysisResultsSection from "@/components/AnalysisResultsSection";
 import FooterSection from "@/components/FooterSection";
 import LoginDialog from "@/components/LoginDialog";
@@ -469,9 +469,19 @@ For detailed analysis of your specific policy, please upload your policy documen
 
       <main className="container mx-auto py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 gap-6 lg:gap-8">
-            <div className="space-y-6">
-              <EnhancedDocumentAnalyzer />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="lg:col-span-1 space-y-6">
+              <LocalDocumentAnalyzer />
+            </div>
+            
+            <div className="lg:col-span-2">
+              <AnalysisResultsSection
+                analysisResult={analysisResult}
+                isAnalyzing={isAnalyzing}
+                isChatting={isChatting}
+                onUseSampleText={handleUseSampleText}
+                onSendMessage={handleSendMessage}
+              />
             </div>
           </div>
         </div>
