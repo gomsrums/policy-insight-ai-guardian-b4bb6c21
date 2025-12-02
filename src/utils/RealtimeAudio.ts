@@ -148,7 +148,7 @@ export class RealtimeChat {
     // PCM16 at 24khz to WAV and play
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
     const wav = this.createWavFromPCM(bytes);
-    const blob = new Blob([wav], { type: "audio/wav" });
+    const blob = new Blob([wav.buffer as ArrayBuffer], { type: "audio/wav" });
     const url = URL.createObjectURL(blob);
     const audioElement = this.audioRef.current;
     if (audioElement) {
