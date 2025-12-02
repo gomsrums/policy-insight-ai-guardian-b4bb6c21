@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const chatpdfApiKey = Deno.env.get('CHATPDF_API_KEY');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     // Validate request size
     const contentLength = req.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 1024 * 1024) { // 1MB limit for chat
+    if (contentLength && parseInt(contentLength) > 1024 * 1024) {
       return new Response(JSON.stringify({ error: 'Request too large' }), {
         status: 413,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -24,7 +24,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { document_id, question } = body;
+    const { document_id, question, document_context } = body;
 
     // Input validation
     if (!document_id || typeof document_id !== 'string') {
@@ -41,62 +41,78 @@ serve(async (req) => {
       });
     }
 
-    // Sanitize inputs
-    const sanitizedDocumentId = document_id.replace(/[^\w-]/gi, '').trim();
-    const sanitizedQuestion = question.trim().substring(0, 2000);
-
-    if (!document_id || !question) {
-      return new Response(JSON.stringify({ error: "Missing document_id or question" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!chatpdfApiKey) {
-      return new Response(JSON.stringify({ error: "ChatPDF API key not configured" }), {
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "Lovable AI API key not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Sending chat message to ChatPDF for document:", document_id);
+    console.log("Processing chat question for document:", document_id);
 
-    // Send chat message to ChatPDF with timeout
-    const chatController = new AbortController();
-    const chatTimeout = setTimeout(() => chatController.abort(), 30000); // 30s timeout
-    
-    const chatResponse = await fetch("https://api.chatpdf.com/v1/chats/message", {
+    const systemPrompt = `You are an expert insurance policy assistant. You help users understand their insurance policies, coverage details, exclusions, and provide guidance on insurance-related questions.
+
+${document_context ? `POLICY DOCUMENT CONTEXT:\n${document_context}\n\n` : ''}
+
+Guidelines:
+- Provide clear, accurate answers based on the policy context when available
+- If information is not in the policy, provide general insurance guidance
+- Explain complex insurance terms in simple language
+- Highlight important coverage details and limitations
+- Be helpful and professional`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": chatpdfApiKey,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        sourceId: sanitizedDocumentId,
+        model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "user",
-            content: sanitizedQuestion,
-          },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: question }
         ],
+        temperature: 0.7,
+        max_tokens: 1500,
       }),
-      signal: chatController.signal
     });
-    
-    clearTimeout(chatTimeout);
 
-    if (!chatResponse.ok) {
-      const errorText = await chatResponse.text();
-      console.error("ChatPDF chat failed:", errorText);
-      throw new Error(`ChatPDF chat failed: ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Lovable AI chat failed:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: "Rate limit exceeded. Please try again in a moment." 
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: "AI credits exhausted. Please add credits to continue." 
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`AI request failed: ${errorText}`);
     }
 
-    const chatData = await chatResponse.json();
-    console.log("ChatPDF chat response:", chatData);
+    const aiResponse = await response.json();
+    const chatResponse = aiResponse.choices?.[0]?.message?.content || "I couldn't process your question. Please try rephrasing it.";
+
+    console.log("Chat response generated successfully");
 
     return new Response(JSON.stringify({ 
       success: true,
-      response: chatData.content || "I couldn't process your question. Please try rephrasing it."
+      response: chatResponse
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
