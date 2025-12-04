@@ -44,20 +44,16 @@ interface ClientRecord {
 
 const BrokerPortal: React.FC = () => {
   const [brandSettings, setBrandSettings] = useState<BrandSettings>({
-    companyName: 'Your Insurance Brokerage',
+    companyName: '',
     logoUrl: '',
     primaryColor: '#3B82F6',
     secondaryColor: '#1E40AF',
-    tagline: 'Trusted Insurance Solutions',
+    tagline: '',
     contactEmail: '',
     contactPhone: ''
   });
 
-  const [clients, setClients] = useState<ClientRecord[]>([
-    { id: '1', name: 'Acme Corp', email: 'contact@acme.com', policiesAnalyzed: 5, lastActivity: new Date(), riskScore: 72 },
-    { id: '2', name: 'TechStart Inc', email: 'info@techstart.com', policiesAnalyzed: 3, lastActivity: new Date(Date.now() - 86400000), riskScore: 85 },
-    { id: '3', name: 'Global Trading Co', email: 'risk@globaltrading.com', policiesAnalyzed: 8, lastActivity: new Date(Date.now() - 172800000), riskScore: 58 }
-  ]);
+  const [clients, setClients] = useState<ClientRecord[]>([]);
 
   const [whitelabelEnabled, setWhitelabelEnabled] = useState(false);
   const [copied, setCopied] = useState(false);
