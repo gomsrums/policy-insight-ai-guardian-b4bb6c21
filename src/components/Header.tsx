@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, User, Loader2, Shield } from "lucide-react";
+import { LogOut, User, Loader2, Shield, Brain } from "lucide-react";
 import { analytics } from "@/services/analytics";
 
 const Header = () => {
@@ -48,6 +48,14 @@ const Header = () => {
             onClick={() => handleNavClick('comparison')}
           >
             Comparison
+          </Link>
+          <Link 
+            to="/intelligence" 
+            className="text-insurance-gray hover:text-insurance-blue transition-colors flex items-center gap-1"
+            onClick={() => handleNavClick('intelligence')}
+          >
+            <Brain className="h-4 w-4" />
+            Intelligence
           </Link>
           <Link 
             to="/features" 
