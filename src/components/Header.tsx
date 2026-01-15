@@ -64,13 +64,6 @@ const Header = () => {
           >
             Analytics
           </Link>
-          <Link 
-            to="/broker" 
-            className="text-insurance-gray hover:text-insurance-blue transition-colors"
-            onClick={() => handleNavClick('broker')}
-          >
-            Broker Portal
-          </Link>
           
           {/* Admin Link - Only visible to admin */}
           {isAuthenticated && isAdmin && (

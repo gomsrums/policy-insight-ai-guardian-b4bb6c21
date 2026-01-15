@@ -11,7 +11,7 @@ import Comparison from "./pages/Comparison";
 import Auth from "./pages/Auth";
 import CyberInsurance from "./pages/CyberInsurance";
 import Admin from "./pages/Admin";
-import BrokerPortal from "./pages/BrokerPortal";
+
 import ImpactFeatures from "./pages/ImpactFeatures";
 import PolicyIntelligence from "./pages/PolicyIntelligence";
 import NotFound from "./pages/NotFound";
@@ -32,7 +32,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/cyber-insurance" element={<CyberInsurance />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/broker" element={<BrokerPortal />} />
+            
             <Route path="/features" element={<ImpactFeatures />} />
             <Route path="/intelligence" element={<PolicyIntelligence />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
