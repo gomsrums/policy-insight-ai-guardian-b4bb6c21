@@ -45,6 +45,14 @@ export default {
 					DEFAULT: 'hsl(var(--accent))',
 					foreground: 'hsl(var(--accent-foreground))'
 				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
 					foreground: 'hsl(var(--popover-foreground))'
@@ -64,11 +72,13 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				insurance: {
-					'blue-dark': '#1e3a8a',
-					'blue': '#2563eb',
-					'blue-light': '#60a5fa',
-					'gray': '#64748b',
-					'gray-light': '#f8fafc',
+					'blue-dark': 'hsl(221 83% 35%)',
+					'blue': 'hsl(221 83% 53%)',
+					'blue-light': 'hsl(221 83% 70%)',
+					'teal': 'hsl(172 66% 40%)',
+					'purple': 'hsl(262 83% 58%)',
+					'gray': 'hsl(215 16% 47%)',
+					'gray-light': 'hsl(210 40% 98%)',
 				}
 			},
 			borderRadius: {
