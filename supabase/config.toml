@@ -1,13 +1,13 @@
 project_id = "takieoywodunrjoteclz"
 
-[functions.policy-analyze-openai]
-verify_jwt = false
-
-[functions.chatpdf-analyze]
-verify_jwt = false
-
-[functions.chatpdf-chat]
-verify_jwt = false
-
 [functions.policy-intelligence-extract]
+verify_jwt = false
+
+[functions.send-gap-alert]
+verify_jwt = false
+
+[functions.analyze-policy-with-knowledge]
+verify_jwt = false
+
+[functions.generate-personalized-recommendations]
 verify_jwt = false
