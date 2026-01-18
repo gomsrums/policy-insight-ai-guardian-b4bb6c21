@@ -1,27 +1,94 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   AlertTriangle, 
   CheckCircle, 
   XCircle, 
   Shield, 
-  Home, 
   FileText,
   TrendingUp,
   AlertCircle,
-  Lightbulb
+  Lightbulb,
+  Download,
+  Mail,
+  Loader2,
+  Share2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { PolicyIntelligenceReport, PolicyGap } from '@/types/policyIntelligence';
+import { generatePolicyReportPDF } from '@/services/pdfExportService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PolicyIntelligenceDashboardProps {
   report: PolicyIntelligenceReport;
 }
 
 const PolicyIntelligenceDashboard: React.FC<PolicyIntelligenceDashboardProps> = ({ report }) => {
+  const [email, setEmail] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      generatePolicyReportPDF(report);
+      toast.success('PDF report downloaded successfully!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleSendEmailAlert = async () => {
+    if (!email) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    if (report.criticalGapsCount === 0) {
+      toast.info('No critical gaps to alert about');
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-gap-alert', {
+        body: {
+          email,
+          userName: report.userProfile.name,
+          criticalGapsCount: report.criticalGapsCount,
+          totalExposure: report.totalExposure,
+          riskScore: report.overallRiskScore,
+          gaps: report.gaps.map(g => ({
+            category: g.category,
+            severity: g.severity,
+            gapIdentified: g.gapIdentified,
+            financialExposure: g.financialExposure,
+            recommendation: g.recommendation
+          }))
+        }
+      });
+
+      if (error) throw error;
+      toast.success('Email alert sent successfully!');
+      setEmail('');
+    } catch (error) {
+      console.error('Email send error:', error);
+      toast.error('Failed to send email alert');
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const getSeverityColor = (severity: PolicyGap['severity']) => {
     switch (severity) {
       case 'critical': return 'bg-red-500';
@@ -54,6 +121,64 @@ const PolicyIntelligenceDashboard: React.FC<PolicyIntelligenceDashboardProps> = 
 
   return (
     <div className="space-y-6">
+      {/* Export & Share Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Share2 className="h-5 w-5" />
+            Export & Share Report
+          </CardTitle>
+          <CardDescription>
+            Download your report or receive email alerts about critical gaps
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              onClick={handleExportPDF} 
+              disabled={isExporting}
+              className="flex items-center gap-2"
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Download PDF Report
+            </Button>
+            
+            <div className="flex-1 flex gap-2">
+              <div className="flex-1">
+                <Input
+                  type="email"
+                  placeholder="Enter email for gap alerts"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <Button 
+                onClick={handleSendEmailAlert}
+                disabled={isSendingEmail || report.criticalGapsCount === 0}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {isSendingEmail ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="h-4 w-4" />
+                )}
+                Send Alert
+              </Button>
+            </div>
+          </div>
+          {report.criticalGapsCount === 0 && (
+            <p className="text-sm text-muted-foreground mt-2">
+              No critical gaps to alert about - your coverage looks good!
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
