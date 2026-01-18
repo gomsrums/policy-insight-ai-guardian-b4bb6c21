@@ -9,5 +9,20 @@ verify_jwt = false
 [functions.analyze-policy-with-knowledge]
 verify_jwt = false
 
+[functions.analyze-policy]
+verify_jwt = false
+
+[functions.compare-policies]
+verify_jwt = false
+
 [functions.generate-personalized-recommendations]
+verify_jwt = false
+
+[functions.chat-with-policy]
+verify_jwt = false
+
+[functions.generate-embeddings]
+verify_jwt = false
+
+[functions.social-media-webhook]
 verify_jwt = false

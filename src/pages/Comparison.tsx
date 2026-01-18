@@ -158,7 +158,7 @@ const Comparison = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
-                        <h4 className="font-semibold mb-2">ChatPDF AI Extraction</h4>
+                        <h4 className="font-semibold mb-2">AI Policy Extraction</h4>
                         <ul className="space-y-1 text-gray-600">
                           <li>• Premium amounts and payment terms</li>
                           <li>• Coverage types and limits</li>

@@ -78,7 +78,7 @@ export const PolicyComparisonTool: React.FC = () => {
       return policy;
     }
 
-    const { data, error } = await supabase.functions.invoke('chatpdf-analyze', {
+    const { data, error } = await supabase.functions.invoke('analyze-policy', {
       body: {
         document_content: policy.content,
         document_name: policy.name
