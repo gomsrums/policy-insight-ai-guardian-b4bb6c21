@@ -16,6 +16,7 @@ interface AuthContextType {
   session: Session | null;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -113,6 +114,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      }
+    });
+    return { error };
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
@@ -128,6 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     session,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     isAuthenticated: !!user,
     isAdmin,
