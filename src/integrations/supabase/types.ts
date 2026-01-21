@@ -331,6 +331,36 @@ export type Database = {
         }
         Relationships: []
       }
+      renewal_reminders: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          note: string | null
+          policy_name: string
+          renewal_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          note?: string | null
+          policy_name: string
+          renewal_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          note?: string | null
+          policy_name?: string
+          renewal_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       revenue_transactions: {
         Row: {
           created_at: string
