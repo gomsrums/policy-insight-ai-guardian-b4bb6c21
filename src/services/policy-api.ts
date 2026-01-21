@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { extractTextFromFile } from "@/services/document-text-extractor";
 
 export interface PolicyDocument {
   id: string;
@@ -123,11 +124,15 @@ export const analyzePolicy = async (document: PolicyDocument): Promise<AnalysisR
     // Get document content
     let documentContent: string;
     if (document.file) {
-      documentContent = await document.file.text();
+      documentContent = await extractTextFromFile(document.file);
     } else if (document.content) {
       documentContent = document.content;
     } else {
       throw new Error("No file or content available for analysis");
+    }
+
+    if (!documentContent || documentContent.trim().length === 0) {
+      throw new Error("Could not extract readable text from the uploaded document.");
     }
 
     console.log("Sending document to AI analysis...");
