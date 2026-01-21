@@ -43,11 +43,11 @@ const Header = () => {
             About
           </Link>
           <Link 
-            to="/comparison" 
+            to="/value" 
             className="text-insurance-gray hover:text-insurance-blue transition-colors"
-            onClick={() => handleNavClick('comparison')}
+            onClick={() => handleNavClick('value_hub')}
           >
-            Comparison
+            Value+ Tools
           </Link>
           
           {/* Admin Link - Only visible to admin */}
