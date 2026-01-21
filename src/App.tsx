@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import Analytics from "./pages/Analytics";
 import ImpactFeatures from "./pages/ImpactFeatures";
 import PolicyIntelligence from "./pages/PolicyIntelligence";
+import ValueHub from "./pages/ValueHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
             <Route path="/comparison" element={<Comparison />} />
+            <Route path="/value" element={<ValueHub />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/cyber-insurance" element={<CyberInsurance />} />
             <Route path="/admin" element={<Admin />} />
